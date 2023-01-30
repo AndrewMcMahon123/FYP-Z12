@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!-- create simple login form and call /login_user-->
+
+<form id="login-form" action="/login_user" method="post">
+    <input type="text" name="username" placeholder="username">
+    <input type="password" name="password" placeholder="password">
+    <input type="submit" value="Login">
+</form>
+
+</body>
+</html>
+
+<script>
+const form = document.getElementById("login-form");
+form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const response = await fetch("/token", {
+        method: "POST",
+        body: formData
+    });
+    if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.access_token);
+        document.cookie = `access_token=${data.access_token}`;
+        console.log(data);
+    } else {
+        alert("Invalid username or password");
+    }
+    const json = await response.json();
+    console.log(json);
+});
+</script>
