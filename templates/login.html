@@ -1,39 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<!-- create simple login form and call /login_user-->
 
-<form id="login-form" action="/login_user" method="post">
-    <input type="text" name="username" placeholder="username">
-    <input type="password" name="password" placeholder="password">
-    <input type="submit" value="Login">
-</form>
 
-</body>
-</html>
 
-<script>
-const form = document.getElementById("login-form");
-form.addEventListener("submit", async event => {
-    event.preventDefault();
-    const formData = new FormData(form);
-    const response = await fetch("/token", {
-        method: "POST",
-        body: formData
-    });
-    if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("token", data.access_token);
-        document.cookie = `access_token=${data.access_token}`;
-        console.log(data);
-    } else {
-        alert("Invalid username or password");
-    }
-    const json = await response.json();
-    console.log(json);
-});
-</script>
+
+<!--const MyComponent = () => {-->
+
+<!--  const [inputValue, setInputValue] = useState('');-->
+<!--    const [inputValue2, setInputValue2] = useState('');-->
+
+<!--  const handleInputChange = (event) => {-->
+<!--    setInputValue(event.target.value);-->
+<!--  };-->
+<!--    const handleInputChange2 = (event) => {-->
+<!--    setInputValue2(event.target.value);-->
+<!--    }-->
+
+
+<!--  const handleSubmit = async () => {-->
+<!--    const response = await fetch('http://localhost:4000/token', {-->
+<!--      method: 'POST',-->
+<!--      headers: { 'Content-Type': 'application/json' },-->
+<!--      body: JSON.stringify({ username: inputValue, password: inputValue2 }),-->
+
+<!--    });-->
+<!--    const data = await response.json();-->
+<!--    console.log(data);-->
+
+<!--    if (data.access_token) {-->
+<!--    console.log('token', data.access_token);-->
+<!--      localStorage.setItem('token', data.access_token);-->
+<!--    }-->
+<!--    else {-->
+<!--      console.log('no token');-->
+<!--    };-->
+<!--    };-->
+
+<!--const handleItem = async () => {-->
+<!--    const token = localStorage.getItem('token');-->
+<!--    console.log(token);-->
+<!--    const response = await fetch('http://localhost:4000/users/me/items/', {-->
+<!--          method: 'GET',-->
+<!--      headers: { 'Content-Type': 'application/json', 'X-Token': token },-->
+<!--    });-->
+
+<!--    if (response.status === 200) {-->
+<!--      const data = await response.json();-->
+<!--      console.log(data);-->
+<!--      alert('success');-->
+<!--    }-->
+<!--    else {-->
+<!--    alert('error');-->
+<!--    }-->
+<!--};-->
+
+
+
+<!--  return ([-->
+<!--    <div>-->
+<!--      <input type="text" value={inputValue} onChange={handleInputChange} />-->
+<!--        <input type="password" value={inputValue2} onChange={handleInputChange2} />-->
+<!--      <button onClick={handleSubmit}>Submit</button>-->
+<!--    </div>,-->
+<!--    <div>-->
+<!--        <button onClick={handleItem}>Submit</button>-->
+<!--    </div>-->
+<!--  ]);-->
+<!--};-->
+
+
+<!--export default MyComponent;-->

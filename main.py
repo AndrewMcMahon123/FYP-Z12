@@ -180,15 +180,31 @@ def verify_access_token(token: str):
         return False
     return True
 
+@app.post("/verify_user")
+async def verify_user(token: str = Body(..., embed=True)):
+    return verify_access_token(token)
 
 @app.get("/users/me/", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
+async def get_token(x_token: str = Header(None)):
+    if x_token is None:
+        raise HTTPException(status_code=400, detail="X-Token header missing")
+    return x_token
 
 @app.get("/users/me/items/")
-async def read_own_items(current_user: User = Depends(get_current_active_user)):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+# async def read_own_items(token: str = Body(..., embed=True)):
+async def read_own_items(token: str = Depends(get_token)):
+    if not verify_access_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    print(token)
+    current_user = get_current_user(token)
+    return [{"item_id": current_user.email, "owner": current_user.username}]
 
 @app.post("/login")
 def login(response: Response):
@@ -197,8 +213,11 @@ def login(response: Response):
     return {"message": "ok"}
 
 @app.get("/dashboard")
-def dashboard():
-    return {"message": "signed in "}
+def dashboard(token: str = Depends(get_token)):
+    if token is None:
+        raise HTTPException(status_code=400, detail="User not found")
+    current_user = get_current_user(token)
+    return {"message": f"{current_user.username} signed in "}
 
 class Item(BaseModel):
     # vcaraible that can be any type
