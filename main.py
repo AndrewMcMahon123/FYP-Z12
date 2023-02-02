@@ -1,8 +1,9 @@
+import json
 import os
 import random
 from typing import Optional, List
 import motor as motor
-from bson import ObjectId
+from bson import ObjectId, json_util
 from fastapi import Response, Body
 from datetime import datetime, timedelta
 import uvicorn
@@ -49,64 +50,66 @@ class PyObjectId(ObjectId):
 
 
 class StudentModel(BaseModel):
-    # id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    # id: PyObjectId = Field(random.randint(0,10000))
-    username: str = Field(...)
-    full_name: str = Field(...)
-    hashed_password: str = Field(...)
-    disabled: bool = Field(...)
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    name: str = Field(...)
+    email: EmailStr = Field(...)
+    password: str = Field(...)
+    disabled: str = Field(...)
 
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
         schema_extra = {
-            "alice": {
-                "username": "alice",
-                "full_name": "Alice Wonderson",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-                "disabled": False,
+            "example": {
+                "name": "bob",
+                "email": "jdoe@example.com",
+                "password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+                "disabled": "True",
             }
         }
 
 
 class UpdateStudentModel(BaseModel):
-    username: Optional[str]
-    full_name: Optional[str]
-    hashed_password: Optional[str]
-    disabled: Optional[bool]
+    name: Optional[str]
+    email: Optional[EmailStr]
+    password: Optional[str]
+    disabled: Optional[str]
 
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
         schema_extra = {
-            "alice": {
-                "username": "alice",
-                "full_name": "Alice Wonderson",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-                "disabled": False,
+            "example": {
+                "name": "bob",
+                "email": "jdoe@example.com",
+                "password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+                "disabled": "True",
             }
         }
 
-
-# @app.post("/", response_description="Add new student", response_model=StudentModel)
-@app.post("/", response_description="Add new student")
+@app.post("/", response_description="Add new student", response_model=StudentModel)
 async def create_student(student: StudentModel = Body(...)):
-    print(student)
     student = jsonable_encoder(student)
     new_student = await db["students"].insert_one(student)
     created_student = await db["students"].find_one({"_id": new_student.inserted_id})
-    # return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_student)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='created_student')
-
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_student)
 
 @app.get(
     "/", response_description="List all students", response_model=List[StudentModel]
 )
 async def list_students():
-    students = await db["students"].find().to_list(1000)
-    print(students)
+    students_data = await db["students"].find().to_list(1000)
+    students = [StudentModel(**student) for student in students_data]
     return students
+
+@app.get("/get/{student_name}", response_description="Get a single student")
+async def show_student(student_name: str):
+    if (student := await db["students"].find_one({"name": student_name})) is not None:
+        # get the student password
+        student_password = student["password"]
+        await login_for_access_token(student_name, 'secret')
+        return student_password
 
 
 @app.post("/remove")
@@ -130,15 +133,16 @@ fake_users_db = {
         "full_name": "John Doe",
         "email": "johndoe@example.com",
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
+        "disabled": 'False',
     },
     "alice": {
         "username": "alice",
         "full_name": "Alice Wonderson",
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
+        "disabled": 'False',
     }
 }
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=4000)
@@ -174,6 +178,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def verify_password(plain_password, hashed_password):
+    print(plain_password)
+    print(hashed_password)
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -184,8 +190,8 @@ def get_password_hash(password):
 def get_user(db, username: str):
     if username in db:
         user_dict = db[username]
+        print(user_dict)
         return UserInDB(**user_dict)
-
 
 def authenticate_user(fake_db, username: str, password: str):
     user = get_user(fake_db, username)
@@ -232,27 +238,44 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
-    print(current_user)
     return current_user
 
+# get user with username from database
+async def get_user_from_db(username: str):
+    user = await db["students"].find_one({"name": username})
+    if user is None:
+        return None
+    return user
 
 @app.post("/token", response_model=Token)
-# async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
 async def login_for_access_token(username: str = Body(..., embed=True), password: str = Body(..., embed=True)):
-    user = authenticate_user(fake_users_db, username, password)
+    user = await get_user_from_db(username)
+    # if user is None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_204_NO_CONTENT,
+    #         detail="User not found",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # check password
+    if not verify_password(password, user.get('password')):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    # generate token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user}, expires_delta=access_token_expires
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
-
 
 def verify_access_token(token: str):
     try:

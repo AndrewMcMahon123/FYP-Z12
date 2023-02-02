@@ -1,63 +1,57 @@
-
-//import React from "react"
-import React, { useState } from 'react';
-
-//const Auth = () => {
-const isAuthenticated = false;
-//}
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LoginComponent = () => {
-console.log(isAuthenticated);
-  const [inputValue, setInputValue] = useState('');
-    const [inputValue2, setInputValue2] = useState('');
+  localStorage.clear();
+  const [inputValue, setInputValue] = useState("");
+  const [inputValue2, setInputValue2] = useState("");
+  const [authenticated, setauthenticated] = useState(
+    localStorage.getItem(localStorage.getItem("authenticated") || false)
+  );
+  const [error, setError] = useState(null);
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
-    const handleInputChange2 = (event) => {
+  const handleInputChange2 = (event) => {
     setInputValue2(event.target.value);
-    }
+  };
 
-
+  const navigate = useNavigate();
   const handleSubmit = async (event) => {
+    // check if input values are empty
+    setError(false);
     event.preventDefault();
-    const response = await fetch('http://localhost:4000/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("http://localhost:4000/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: inputValue, password: inputValue2 }),
-
     });
     const data = await response.json();
-    console.log(data);
 
     if (data.access_token) {
-      console.log('token', data.access_token);
-      localStorage.setItem('token', data.access_token);
-      isAuthenticated = true;
-      window.location.href = '/dashboard';
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("authenticated", true);
+      navigate("/dashboard");
+    } else {
+      setError(true);
     }
-    else {
-      console.log('no token');
-    };
-    };
+  };
 
-const handleItem = async () => {
-    const token = localStorage.getItem('token');
-    console.log(token);
-    const response = await fetch('http://localhost:4000/users/me/items/', {
-          method: 'GET',
-      headers: { 'Content-Type': 'application/json', 'X-Token': token },
+  const handleItem = async () => {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:4000/users/me/items/", {
+      method: "GET",
+      headers: { "Content-Type": "application/json", "X-Token": token },
     });
 
     if (response.status === 200) {
       const data = await response.json();
-      console.log(data);
-      alert('success');
     }
-    else {
-    alert('error');
-    }
-};
+  };
+
   return (
     <div className="Auth-form-container">
       <form className="Auth-form">
@@ -70,7 +64,7 @@ const handleItem = async () => {
               className="form-control mt-1"
               value={inputValue}
               placeholder="Enter email"
-                onChange={handleInputChange}
+              onChange={handleInputChange}
             />
           </div>
           <div className="form-group mt-3">
@@ -80,20 +74,27 @@ const handleItem = async () => {
               className="form-control mt-1"
               value={inputValue2}
               placeholder="Enter password"
-                onChange={handleInputChange2}
+              onChange={handleInputChange2}
             />
           </div>
           <div className="d-grid gap-2 mt-3">
-            <button className="btn btn-primary" onClick={handleSubmit}>Submit</button>
+            <button className="btn btn-primary" onClick={handleSubmit}>
+              Submit
+            </button>
           </div>
+          {error && (
+            <p className="text-danger text-center">
+              Incorrect username or password
+            </p>
+          )}
+
           <p className="forgot-password text-right mt-2">
             Forgot <a href="#">password?</a>
           </p>
         </div>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export { LoginComponent };
-//export { Auth };
+export default LoginComponent;
