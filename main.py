@@ -310,15 +310,12 @@ async def verify_access_token(token):
     return True
 
 @app.post("/verify_user")
-# async def verify_user(token: str = Body(..., embed=True)):
 async def verify_user(token: str = Body(None, embed=True)):
     check = await verify_access_token(token)
     if check is False:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Invalid access token"},
-            # detail="Error verifying access token",
-            # headers={"WWW-Authenticate": "Bearer"}
         )
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Access token verified"})
