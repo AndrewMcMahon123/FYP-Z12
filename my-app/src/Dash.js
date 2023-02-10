@@ -16,6 +16,10 @@ import {
 
 import { useState } from 'react';
 
+import Chart from 'chart.js/auto';
+import { Line } from "react-chartjs-2";
+
+
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 
@@ -25,6 +29,7 @@ import Col from 'react-bootstrap/Col';
 
 import { LineChart, PieChart } from 'react-chartkick'
 import 'chartkick/chart.js'
+import { Data } from "./Data";
 
 // Single KPI card in the demo dashboard with sample inputs
 export function KpiCard() {

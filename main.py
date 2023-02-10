@@ -281,7 +281,7 @@ async def login_for_access_token(username: str = Body(..., embed=True), password
         data={"sub": user}, expires_delta=access_token_expires
     )
 
-    check = await verify_access_token(access_token)
+    check = verify_access_token(access_token)
     print('access', check)
     print(access_token)
     return {"access_token": access_token, "token_type": "bearer"}
@@ -302,7 +302,7 @@ async def login_for_access_token(username: str = Body(..., embed=True), password
 #         return False
 #     return True
 
-async def verify_access_token(token):
+def verify_access_token(token):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.exceptions.InvalidTokenError:
@@ -310,8 +310,13 @@ async def verify_access_token(token):
     return True
 
 @app.post("/verify_user")
-async def verify_user(token: str = Body(None, embed=True)):
-    check = await verify_access_token(token)
+def verify_user(token: str = Body(None, embed=True)):
+    if token is None or token == '':
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Invalid access token"},
+        )
+    check = verify_access_token(token)
     if check is False:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,16 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { NavBarFixed } from "./Navbar";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./index.css";
+
 
 const LoginComponent = () => {
   localStorage.clear();
   const [inputValue, setInputValue] = useState("");
   const [inputValue2, setInputValue2] = useState("");
   const [authenticated, setauthenticated] = useState(
-    localStorage.getItem(localStorage.getItem("authenticated") || false)
+    localStorage.getItem("authenticated")
   );
   const [error, setError] = useState(null);
+
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
@@ -53,6 +58,11 @@ const LoginComponent = () => {
   };
 
   return (
+  <div>
+    <div>
+  <NavBarFixed />
+  </div>
+
     <div className="Auth-form-container">
       <form className="Auth-form">
         <div className="Auth-form-content">
@@ -93,6 +103,7 @@ const LoginComponent = () => {
           </p>
         </div>
       </form>
+    </div>
     </div>
   );
 };
