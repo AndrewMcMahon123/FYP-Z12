@@ -5,12 +5,13 @@ import { Data, Data2 } from "./Data";
 import LineChart from "./LineChart";
 
 const Dashboard = () => {
+
   const [chartData, setChartData] = useState({
-    labels: Data.map((data) => data.year),
+    labels: Data.map((data) => data.distance),
     datasets: [
       {
-        label: "Users Gained ",
-        data: Data.map((data) => data.userGain),
+        label: "Benchmark Split",
+        data: Data.map((data) => data.split),
         backgroundColor: [
           "rgba(75,192,192,1)",
           "#ecf0f1",
@@ -25,8 +26,8 @@ const Dashboard = () => {
         fill: true,
       },
         {
-        label: "Users Lost ",
-        data: Data2.map((data) => data.userGain),
+        label: "Split",
+        data: Data2.map((data) => data.split),
         backgroundColor: 'blue',
         borderColor: "blue",
         backgroundColor: 'blue',
@@ -163,7 +164,7 @@ console.log("Data", chartData);
         </div>
       </div>
 
-      <div class="col-sm-8">
+      <div class="col-sm-6">
         <div class="well">
           <Graph />
         </div>
@@ -174,13 +175,6 @@ console.log("Data", chartData);
           <Tabss />
         </div>
       </div>
-      <div class="col-sm-8">
-        <div class="well">
-        <div>
-            <LineChart chartData={chartData} />
-        </div>
-            </div>
-            </div>
     </div>
   );
 };
