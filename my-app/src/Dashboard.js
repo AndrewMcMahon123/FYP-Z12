@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Graph, KpiCard, Tabss } from "./Dash";
+import { Graph, KpiCard, Tabss, Benchmarkk } from "./Dash";
 import { NavBarSticky } from "./Navbar";
 import { Data, Data2 } from "./Data";
-import LineChart from "./LineChart";
+import BenchmarkChart from "./BenchmarkChart";
 
 const Dashboard = () => {
 
@@ -169,12 +169,15 @@ console.log("Data", chartData);
           <Graph />
         </div>
       </div>
-      <div class="col-sm-4">
+      <div class="col-sm-6">
         <div class="well">
-          <h3 class="text-center">Latest Results</h3>
-          <Tabss />
-        </div>
-      </div>
+            <h3 class="text-center">Benchmark results</h3>
+            <div>
+            < Benchmarkk />
+            </div>
+            </div>
+            </div>
+
     </div>
   );
 };

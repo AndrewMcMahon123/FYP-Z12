@@ -1,12 +1,14 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
-function LineChart2({ chartData }) {
+function BenchmarkChart({ chartData }) {
   return (
       <Line
         data={chartData}
         options={{
+        animation: false,
           plugins: {
             title: {
+            responsive: true,
               display: true,
               text: "Benchmarks",
               borderColor: "red",
@@ -21,4 +23,4 @@ function LineChart2({ chartData }) {
       />
   );
 }
-export default LineChart2;
+export default BenchmarkChart;
