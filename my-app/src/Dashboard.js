@@ -83,7 +83,8 @@ console.log("Data", chartData);
               <img
                 src={require("./man.jpg")}
                 class="img-thumbnail img-fluid"
-                width="45%"
+                width="70px"
+                height="50px"
               />
               <div class="p-2 ">
                 <h4>Age: 25</h4>

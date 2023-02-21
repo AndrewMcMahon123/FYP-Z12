@@ -25,7 +25,7 @@ import Table from 'react-bootstrap/Table';
 import ResultsGraph from "./ResultsGraph";
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 
 import Chart from 'chart.js/auto';
 import { Line } from "react-chartjs-2";
@@ -40,7 +40,10 @@ import Col from 'react-bootstrap/Col';
 
 import { LineChart, PieChart } from 'react-chartkick'
 import 'chartkick/chart.js'
-import { Data, Data2 } from "./Data";
+import { Data, Data2, Data3, Data4, Data5, Data6, Data7 } from "./Data"
+import { Elite1, Elite2, Elite3, Elite4, PreElite1, PreElite2, PreElite3, PreElite4,
+ Development1, Development2, Development3, Development4 } from "./BenchmarkResults"
+
 import BenchmarkChart from "./BenchmarkChart";
 
 function formatSecondsToMinutesAndSeconds(seconds) {
@@ -76,117 +79,131 @@ export function KpiCard() {
 
 
 export function Graph(){
-  const [chartData, setChartData] = useState({
-    labels: Data.map((data) => data.distance),
-    datasets: [
-      {
-        label: "Benchmark Split",
-        data: Data.map((data) => data.time),
-        backgroundColor: [
-          "rgba(75,192,192,1)",
-          "#ecf0f1",
-          "#50AF95",
-          "#f3ba2f",
-          "#2a71d0"
-        ],
-        borderColor: "black",
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        borderColor: 'rgba(255, 159, 64, 1)',
-        borderWidth: 1,
-        fill: true,
-      },
-        {
-        label: "Split",
-        data: Data2.map((data) => data.split),
-        backgroundColor: 'blue',
-        borderColor: "blue",
-        backgroundColor: 'blue',
-        borderColor: 'blue',
-        borderWidth: 1,
-        type: 'scatter'
+    const [resultsActiveTab, setResultsActiveTab] = useState(0);
+    const [benchmarkActiveTab, setBenchmarkActiveTab] = useState(0);
+
+    // loop over Data2 to Data7 and store minimum splits in a single array
+        const allData = [Data2, Data3, Data4, Data5, Data6, Data7];
+        const minSplits = [];
+
+        for (let i = 0; i < allData.length; i++) {
+          const min = Math.min(...allData[i].map((data) => data.split));
+          minSplits.push(min);
         }
-    ]
-  });
-  console.log('thischartdata', chartData);
-//  const [resultsData , setResultsData] = useState({
-//    labels: Data2.map((data) => data.distance),
-//    datasets: [
-//        {
-//        label: "Time",
-//        data: Data2.map((data) => moment.duration(parseInt(data.split), 'seconds').format('mm:ss')),
-//        backgroundColor: 'blue',
-//        borderColor: "blue",
-//        backgroundColor: 'blue',
-//        borderColor: 'blue',
-//        borderWidth: 1,
-//        type: 'line'
-//        }
-//    ]
-//    });
 
-//const [resultsData, setResultsData] = useState({
-//  labels: Data2.map((data) => data.distance),
-//  datasets: [
-//    {
-//      label: "Time",
-//      data: Data2.map((data) => parseInt(data.split) * 1000),
-//      backgroundColor: 'blue',
-//      borderColor: 'blue',
-//      borderWidth: 1,
-//      type: 'line'
-//    }
-//  ]
-//});
-//
-//
-//   const options = {
-//  scales: {
-//    yAxes: [{
-//      type: 'time',
-//      time: {
-//        parser: 'H:mm',
-//        unit: 'hour',
-//        stepSize: 1,
-//        displayFormats: {
-//          hour: 'H:mm'
-//        },
-//        tooltipFormat: 'H:mm'
-//      },
-//    }]
-//  }
-//};
+        function convertDurationtoSeconds(duration){
+    const [minutes, seconds] = duration.split(':');
+    return Number(minutes) * 60 + Number(seconds);
+};
 
-const [resultsData, setResultsData] = useState({
-  labels: Data2.map((data) => moment.duration(parseInt(data.split), 'seconds').format('mm:ss')),
+    const benchmarkSets = [Elite1, Elite2, Elite3, Elite4, PreElite1, PreElite2, PreElite3, PreElite4,
+    Development1, Development2, Development3, Development4];
+    const activeDataSet = benchmarkSets[benchmarkActiveTab];
+const [chartData, setChartData] = useState({
+  labels: Data.map((data) => data.distance),
   datasets: [
     {
-      label: "Time",
-      data: Data2.map((data) => parseInt(data.split)),
+      data: activeDataSet.map((data) => convertDurationtoSeconds(data.split)),
+      label: 'Benchmark Split',
+      backgroundColor: 'rgba(255, 159, 64, 0.2)',
+      borderColor: 'rgba(255, 159, 64, 1)',
+      borderWidth: 1,
+      fill: true,
+      type: 'line'
+    },
+    {
+      label: "Split",
+      data: minSplits.map((data) => data),
+      backgroundColor: 'blue',
+      borderColor: "blue",
       backgroundColor: 'blue',
       borderColor: 'blue',
       borderWidth: 1,
-      type: 'line',
-      tension: 0.5
+      type: 'scatter'
     }
   ]
 });
 
+useLayoutEffect(() => {
+  const activeDataSet = benchmarkSets[benchmarkActiveTab];
+  const updatedChartData = {
+    ...chartData,
+    datasets: [
+      {
+        ...chartData.datasets[0],
+        data: activeDataSet.map((data) => convertDurationtoSeconds(data.split)),
+      },
+      {
+        ...chartData.datasets[1],
+        data: minSplits.map((data) => data),
+      }
+    ]
+  };
+  setChartData(updatedChartData);
+    const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
 
-   const [resultsActiveTab, setResultsActiveTab] = useState(0);
+  // Scroll the window back to its previous position
+  window.scrollTo(0, scrollPosition);
+}, [benchmarkActiveTab]);
+
+const [resultsData, setResultsData] = useState({
+  labels: [], // <-- Leave empty to preload the graph
+  datasets: [
+    {
+      label: "Time",
+      data: [], // <-- Leave empty to preload the graph
+      backgroundColor: 'blue',
+      borderColor: 'blue',
+      borderWidth: 1,
+      type: 'line',
+      tension: 0.3
+    },
+    {
+      label: "Average Time",
+      data: [], // <-- Leave empty to preload the graph
+      backgroundColor: 'green',
+      borderColor: 'green',
+      borderWidth: 1,
+      type: 'line',
+      tension: 0.3
+    }
+  ]
+});
+
+useEffect(() => {
+  const dataSets = [Data2, Data3, Data4, Data5, Data6, Data7];
+  const data = dataSets[resultsActiveTab];
+  const labels = data.map((data) => moment(data.date, 'YYYY-MM-DD').format('YYYY-MM-DD'));
+  const splits = data.map((data) => parseInt(data.split));
+  const averageSplit = splits.reduce((a, b) => a + b, 0) / splits.length;
+
+  setResultsData((prevState) => ({
+    ...prevState,
+    labels: labels,
+    datasets: [
+      {
+        ...prevState.datasets[0],
+        data: splits,
+      },
+      {
+        ...prevState.datasets[1],
+        data: Array(labels.length).fill(averageSplit),
+      }
+    ]
+  }));
+}, [resultsActiveTab]);
+
 
   function handleResultsTabSelect(index) {
     setResultsActiveTab(index);
     console.log(`Selected tab index is ${index}`);
   }
 
-  const [benchmarkActiveTab, setBenchmarkActiveTab] = useState(0);
-
   function handleBenchmarkTabSelect(index) {
     setBenchmarkActiveTab(index);
     console.log(`Selected tab index is ${index}`);
 
   }
-
 
 return (
 <>
@@ -196,7 +213,7 @@ return (
 <Tab>Benchmarks</Tab>
 </TabList>
 <TabPanel>
-<Tabs  onSelect={handleResultsTabSelect} forceRenderTabPanel={true} selectedIndex={resultsActiveTab}>
+<Tabs onSelect={handleResultsTabSelect} forceRenderTabPanel={true} selectedIndex={resultsActiveTab} defaultIndex={0}>
 <TabList>
 <Tab>100m</Tab>
 <Tab>500m</Tab>
@@ -206,27 +223,27 @@ return (
 <Tab>10000m</Tab>
 </TabList>
 <TabPanel>
-< Line data={resultsData}/>
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 <TabPanel>
-<ResultsGraph chartData={chartData} />
+< Line data={resultsData} options={{ animation: false }} />
 </TabPanel>
 </Tabs>
 </TabPanel>
 <TabPanel>
-<Tabs onSelect={handleBenchmarkTabSelect} forceRenderTabPanel={true} selectedIndex={benchmarkActiveTab}>
+<Tabs onSelect={handleBenchmarkTabSelect} forceRenderTabPanel={true} selectedIndex={benchmarkActiveTab} defaultIndex={0}>
 <TabList>
 <Tab>Elite 1</Tab>
 <Tab>Elite 2</Tab>
@@ -236,25 +253,46 @@ return (
 <Tab>Pre-Elite 6</Tab>
 <Tab>Pre-Elite 7</Tab>
 <Tab>Pre-Elite 8</Tab>
-<Tab>Pre-Elite 9</Tab>
+<Tab>Development 9</Tab>
 <Tab>Development 10</Tab>
 <Tab>Development 11</Tab>
 <Tab>Development 12</Tab>
 </TabList>
 <TabPanel>
-<BenchmarkChart chartData={chartData} />
+< Line data={chartData} options={{ animation: false }}/>
 </TabPanel>
 <TabPanel>
-<BenchmarkChart chartData={chartData} />
+<Line data={chartData} options={{ animation: false }}/>
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={chartData} options={{ animation: false }}/>
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={chartData} options={{ animation: false }}/>
 </TabPanel>
 <TabPanel>
-<LineChart label="boom" height="445px" data={{"2021-05-13":2,"2021-05-14":5,"2021-05-15":3,"2021-05-16":8,"2021-05-17":6,"2021-05-18":6,"2021-05-19":12,"2021-05-20":5,"2021-05-21":5,"2021-05-22":3,"2021-05-23":1,"2021-05-24":6,"2021-05-25":1,"2021-05-26":3,"2021-05-27":2,"2021-05-28":3,"2021-05-29":2,"2021-05-30":8,"2021-05-31":5}} />
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
+</TabPanel>
+<TabPanel>
+< Line data={chartData} options={{ animation: false }}/>
 </TabPanel>
 </Tabs>
 </TabPanel>

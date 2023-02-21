@@ -40,6 +40,7 @@ const ResultsChart = () => {
     }
   };
 
+
   return (
     <div>
       <Line data={resultsData} options={chartConfig.options} />
