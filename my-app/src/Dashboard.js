@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { Graph, KpiCard, Tabss } from "./Dash";
+import { Graph, KpiCard, Tabss, Benchmarkk } from "./Dash";
 import { NavBarSticky } from "./Navbar";
 import { Data, Data2 } from "./Data";
-import LineChart from "./LineChart";
+import BenchmarkChart from "./BenchmarkChart";
 
 const Dashboard = () => {
+
   const [chartData, setChartData] = useState({
-    labels: Data.map((data) => data.year),
+    labels: Data.map((data) => data.distance),
     datasets: [
       {
-        label: "Users Gained ",
-        data: Data.map((data) => data.userGain),
+        label: "Benchmark Split",
+        data: Data.map((data) => data.split),
         backgroundColor: [
           "rgba(75,192,192,1)",
           "#ecf0f1",
@@ -25,8 +26,8 @@ const Dashboard = () => {
         fill: true,
       },
         {
-        label: "Users Lost ",
-        data: Data2.map((data) => data.userGain),
+        label: "Split",
+        data: Data2.map((data) => data.split),
         backgroundColor: 'blue',
         borderColor: "blue",
         backgroundColor: 'blue',
@@ -82,7 +83,8 @@ console.log("Data", chartData);
               <img
                 src={require("./man.jpg")}
                 class="img-thumbnail img-fluid"
-                width="45%"
+                width="70px"
+                height="50px"
               />
               <div class="p-2 ">
                 <h4>Age: 25</h4>
@@ -163,24 +165,20 @@ console.log("Data", chartData);
         </div>
       </div>
 
-      <div class="col-sm-8">
+      <div class="col-sm-6">
         <div class="well">
           <Graph />
         </div>
       </div>
-      <div class="col-sm-4">
+      <div class="col-sm-6">
         <div class="well">
-          <h3 class="text-center">Latest Results</h3>
-          <Tabss />
-        </div>
-      </div>
-      <div class="col-sm-8">
-        <div class="well">
-        <div>
-            <LineChart chartData={chartData} />
-        </div>
+            <h3 class="text-center">Benchmark results</h3>
+            <div>
+            < Benchmarkk />
             </div>
             </div>
+            </div>
+
     </div>
   );
 };
