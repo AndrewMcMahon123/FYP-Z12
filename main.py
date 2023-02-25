@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Optional, List
 import motor as motor
@@ -87,6 +88,72 @@ class UpdateStudentModel(BaseModel):
                 "disabled": "True",
             }
         }
+
+class BenchmarkTimesModel(BaseModel):
+    category: str
+    level: str
+    distance: int
+    time: int
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+        schema_extra = {
+            "example": {
+                "category": "Jr 70kg Men",
+                "level": "Development 12",
+                "distance": "jdoe@example.com",
+                "time": "",
+            }
+        }
+
+class UpdateBenchmarkTimesModel(BaseModel):
+    category: Optional[str]
+    level: Optional[str]
+    distance: Optional[int]
+    time: Optional[int]
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+        schema_extra = {
+            "example": {
+                "category": "Jr 70kg Men",
+                "level": "Development 12",
+                "distance": 100,
+                "time": 10,
+            }
+        }
+# Get benchmark times for a specific category, level, and distance
+@app.get("/benchmarkTimes/{category}/{level}/{distance}", response_description="Get benchmark times")
+async def get_benchmark_times(category: str, level: str, distance: int):
+    category_name = category.replace(" ", "")
+    collection_name = category_name+"BenchmarkTimes"
+    print(collection_name)
+    students_data = await db[collection_name].find({"level": level, "distance": distance}).to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+
+    if students:
+        return students
+    raise HTTPException(status_code=404, detail=f"{collection_name} not found")
+@app.get("/deleteAllCollections", response_description="Delete all collections")
+async def delete_all_collections():
+    collections = await db.list_collection_names()
+    for collection in collections:
+        await db.drop_collection(collection)
+    print("All collections deleted.")
+@app.post("/deleteMenBenchmarkTimes", response_description="Delete benchmark times")
+async def delete_benchmark_times():
+    collection  = db["EliteHeavyweightMenBenchmarkTimes"]
+    await collection.drop()
+    return "Deleted"
+
+@app.get("/getBenchmarkTimes", response_description="Get benchmark times")
+async def get_benchmark_times():
+    students_data = await db["Elite70KgWomenBenchmarkTimes"].find().to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+    return students
 
 @app.post("/", response_description="Add new student", response_model=StudentModel)
 async def create_student(student: StudentModel = Body(...)):
