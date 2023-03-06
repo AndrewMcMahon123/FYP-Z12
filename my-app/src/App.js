@@ -7,6 +7,7 @@ import Dashboard from "./Dashboard"
 import Home from "./Home"
 import NotFound from "./NotFound"
 import Blah from "./Blah"
+import Register from "./Register"
 import '@tremor/react/dist/esm/tremor.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/home" element={<Home />} />
         <Route path="*" element={<NotFound />} />

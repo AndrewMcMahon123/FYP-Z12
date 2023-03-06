@@ -9,8 +9,7 @@ import {
     Title,
 } from '@tremor/react';
 
-// import date
-
+import Select from 'react-select';
 
 import * as moment from 'moment';
 import 'moment-duration-format';
@@ -79,8 +78,107 @@ export function KpiCard() {
 
 
 export function Graph(){
+
+const ageOptions = [
+    { value: 'U14', label: 'U14' },
+    { value: 'U16', label: 'U16' },
+    { value: 'Junior', label: 'Junior' },
+    { value: 'U23', label: 'U23' },
+    { value: 'Senior', label: 'Senior' }
+];
+
+const genderOptions = [
+    { value: 'Male', label: 'Male' },
+    {value: 'Female', label: 'Female'}
+];
+
+const weightOptions = [
+    { value: '70Kg', label: '70Kg' },
+    { value: '80Kg', label: '80Kg' },
+    { value: 'Heavyweight', label: 'Heavyweight' },
+];
+
+
+    const [setGender, setGenderOption] = useState(null);
+//    const [setGender, setGenderOption] = useState(genderOptions[0].value);
+    console.log(setGender);
+    const [setAge, setAgeOption] = useState(null);
+//    const [setAge, setAgeOption] = useState(ageOptions[0].value);
+    console.log(setAge);
+    const [setWeight, setWeightOption] = useState(null);
+//    const [setWeight, setWeightOption] = useState(weightOptions[0].value);
+    console.log(setWeight);
+        const [benchmarkActiveTab, setBenchmarkActiveTab] = useState(0);
+
+
+    const benchmarkSets = [Elite1, Elite2, Elite3, Elite4, PreElite1, PreElite2, PreElite3, PreElite4,
+    Development1, Development2, Development3, Development4];
+    const activeDataSet = benchmarkSets[benchmarkActiveTab];
+    const levels = ['Elite1', 'Elite2', 'Elite3', 'Elite4', 'PreElite1', 'PreElite2', 'PreElite3', 'PreElite4',
+    'Development1', 'Development2', 'Development3', 'Development4'];
+    const activeLevel = levels[benchmarkActiveTab];
+
+    const [gr, setGr] = useState([{"category":"Jr 70kg Men","level":"Elite1","distance":100,"time":78},{"category":"Jr 70kg Men","level":"Elite1","distance":500,"time":84},{"category":"Jr 70kg Men","level":"Elite1","distance":1000,"time":90},{"category":"Jr 70kg Men","level":"Elite1","distance":2000,"time":93},{"category":"Jr 70kg Men","level":"Elite1","distance":6000,"time":99},{"category":"Jr 70kg Men","level":"Elite1","distance":10000,"time":102}]);
+
+
+
+    useEffect(() => {
+    async function submit() {
+    console.log("GENDERR", setGender);
+    const category = "Jr 70Kg Men";
+    const level = "Development1";
+    const distance = "100";
+    let gender = ''
+    let age = ''
+    let weight = ''
+    if(setGender.value == 'Male') {
+        gender = 'Men'
+      }
+    else{
+    gender = 'Women'
+      }
+
+
+    function getWeight(){
+      if(typeof setWeight == 'undefined'){
+        return '80Kg'
+      }
+      return setWeight.value
+    }
+
+
+    function getAge(){
+        if(setAge === null){
+        setAgeOption(ageOptions[0].value);
+      }
+     if(setAge.value == 'Junior'){
+        return 'Jr'
+      }
+     if(setAge.value == 'Senior'){
+        return 'Elite'
+      }
+
+      return setAge.value
+    }
+
+    const categoryFormed = getAge()+''+getWeight()+''+gender;
+    console.log('GRRR', benchmarkSets[0])
+
+    const response = await fetch("http://localhost:4000/benchmarkTimes/"+categoryFormed+"/"+activeLevel);
+    const data = await response.json();
+    await setGr(data);
+    console.log('BGFOIDS', gr);
+    }
+    submit();
+    }, [setGender, setAge, setWeight, benchmarkActiveTab]);
+
+    function jsonToArray(json){
+    return Object.keys(json).map(key => ({[key]: json[key]}));
+    }
+
+//    handleSubmit();
+
     const [resultsActiveTab, setResultsActiveTab] = useState(0);
-    const [benchmarkActiveTab, setBenchmarkActiveTab] = useState(0);
 
     // loop over Data2 to Data7 and store minimum splits in a single array
         const allData = [Data2, Data3, Data4, Data5, Data6, Data7];
@@ -96,14 +194,15 @@ export function Graph(){
     return Number(minutes) * 60 + Number(seconds);
 };
 
-    const benchmarkSets = [Elite1, Elite2, Elite3, Elite4, PreElite1, PreElite2, PreElite3, PreElite4,
-    Development1, Development2, Development3, Development4];
-    const activeDataSet = benchmarkSets[benchmarkActiveTab];
+console.log('LOOK HERE', jsonToArray(gr));
+
+
 const [chartData, setChartData] = useState({
   labels: Data.map((data) => data.distance),
   datasets: [
     {
-      data: activeDataSet.map((data) => convertDurationtoSeconds(data.split)),
+//      data: Data.map((data) => convertDurationtoSeconds(data.split)),
+      data: Object.values(gr).map((data) => data.time),
       label: 'Benchmark Split',
       backgroundColor: 'rgba(255, 159, 64, 0.2)',
       borderColor: 'rgba(255, 159, 64, 1)',
@@ -112,26 +211,27 @@ const [chartData, setChartData] = useState({
       type: 'line'
     },
     {
-      label: "Split",
+      label: 'Split',
       data: minSplits.map((data) => data),
       backgroundColor: 'blue',
       borderColor: "blue",
-      backgroundColor: 'blue',
-      borderColor: 'blue',
       borderWidth: 1,
       type: 'scatter'
     }
   ]
 });
 
+
 useLayoutEffect(() => {
-  const activeDataSet = benchmarkSets[benchmarkActiveTab];
+//  const activeDataSet = benchmarkSets[benchmarkActiveTab];
+  const activeDataSet = gr;
   const updatedChartData = {
     ...chartData,
     datasets: [
       {
         ...chartData.datasets[0],
-        data: activeDataSet.map((data) => convertDurationtoSeconds(data.split)),
+//        data: activeDataSet.map((data) => convertDurationtoSeconds(data.split)),
+        data: activeDataSet.map((data) => (data.time)),
       },
       {
         ...chartData.datasets[1],
@@ -144,7 +244,7 @@ useLayoutEffect(() => {
 
   // Scroll the window back to its previous position
   window.scrollTo(0, scrollPosition);
-}, [benchmarkActiveTab]);
+}, [benchmarkActiveTab, gr, setGender, setAge, setWeight]);
 
 const [resultsData, setResultsData] = useState({
   labels: [], // <-- Leave empty to preload the graph
@@ -169,6 +269,87 @@ const [resultsData, setResultsData] = useState({
     }
   ]
 });
+
+function WeightDropdown(props) {
+  const handleDropdownChange = (setWeight) => {
+    props.setWeightOption(setWeight);
+  };
+
+  const customStyles = {
+    control: (provided) => ({
+      ...provided,
+      width: '225px' // Change the width here
+    })
+  };
+
+  return (
+    <Select
+      options={weightOptions}
+      value={props.selectedOption} // Set the default value to the first option
+//      value={setWeight} // Set the default value to the first option
+      onChange={handleDropdownChange}
+      styles={customStyles}
+      placeholder="Weight"
+    />
+  );
+}
+
+
+
+function AgeDropdown(props) {
+  const handleDropdownChange = (setAge) => {
+    props.setAgeOption(setAge);
+  };
+
+        const customStyles = {
+    control: (provided) => ({
+      ...provided,
+      width: '225px' // Change the width here
+    })
+  };
+
+  return (
+    <Select
+    selected={props.setAge}
+      options={ageOptions}
+      value={props.selectedOption}
+//      value={setAge}
+      onChange={handleDropdownChange}
+      styles={customStyles}
+        placeholder="Age"
+
+    />
+  );
+}
+
+function GenderDropdown(props) {
+  const handleDropdownChange = (setGender) => {
+    props.setGenderOption(setGender);
+  };
+
+  const state = {
+  value: {label: props.setGender, value: props.setGender}
+  }
+
+      const customStyles = {
+    control: (provided) => ({
+      ...provided,
+      width: '225px' // Change the width here
+    })
+  };
+
+  return (
+    <Select
+      options={genderOptions}
+      value={props.selectedOption}
+//      value={setGender}
+      onChange={handleDropdownChange}
+      styles={customStyles}
+      placeholder='Gender'
+    />
+  );
+}
+
 
 useEffect(() => {
   const dataSets = [Data2, Data3, Data4, Data5, Data6, Data7];
@@ -204,6 +385,14 @@ useEffect(() => {
     console.log(`Selected tab index is ${index}`);
 
   }
+
+  const benchmarkChangeOptions =
+  {
+    animation: true,
+    animationDuration: 1000 // set the duration of animation in ms
+  };
+
+
 
 return (
 <>
@@ -245,6 +434,13 @@ return (
 <TabPanel>
 <Tabs onSelect={handleBenchmarkTabSelect} forceRenderTabPanel={true} selectedIndex={benchmarkActiveTab} defaultIndex={0}>
 <TabList>
+<div className="container">
+<div className="d-flex">
+<GenderDropdown selectedOption={setGender} setGender={setGender} setGenderOption={setGenderOption} />
+<AgeDropdown selectedOption={setAge} setAge={setAge} setAgeOption={setAgeOption} />
+<WeightDropdown selectedOption={setWeight} setWeight={setWeight} setWeightOption={setWeightOption}/>
+</div>
+</div>
 <Tab>Elite 1</Tab>
 <Tab>Elite 2</Tab>
 <Tab>Elite 3</Tab>
@@ -259,40 +455,40 @@ return (
 <Tab>Development 12</Tab>
 </TabList>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-<Line data={chartData} options={{ animation: false }}/>
+<Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 <TabPanel>
-< Line data={chartData} options={{ animation: false }}/>
+< Line data={chartData} options={benchmarkChangeOptions}/>
 </TabPanel>
 </Tabs>
 </TabPanel>

@@ -1,5 +1,8 @@
 import asyncio
 import os
+import re
+import email_validator
+import uuid
 from typing import Optional, List
 import motor as motor
 from bson import ObjectId, json_util
@@ -89,6 +92,8 @@ class UpdateStudentModel(BaseModel):
             }
         }
 
+
+
 class BenchmarkTimesModel(BaseModel):
     category: str
     level: str
@@ -125,13 +130,91 @@ class UpdateBenchmarkTimesModel(BaseModel):
                 "time": 10,
             }
         }
-# Get benchmark times for a specific category, level, and distance
-@app.get("/benchmarkTimes/{category}/{level}/{distance}", response_description="Get benchmark times")
-async def get_benchmark_times(category: str, level: str, distance: int):
+
+
+class Userr():
+
+    # constructor
+    def __init__(self, username, password, email):
+        self.username = username
+        self.password = password
+        self.email = email
+
+
+#register a new user
+@app.post("/register", response_description="Register a new user")
+async def register_user(username: str = Body(...), password: str = Body(...), email: str = Body(...)):
+    await check_username(username)
+    await check_email(email)
+    await check_email_format(email)
+
+    user = Userr(username, password, email)
+    new_user = await db["users"].insert_one(user.__dict__)
+    created_user = await db["users"].find_one({"_id": new_user.inserted_id})
+    created_user["_id"] = str(created_user["_id"])
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
+
+# list all users
+@app.get("/users", response_description="List all users")
+async def list_users():
+    users = await db["users"].find().to_list(1000)
+    for user in users:
+        user["_id"] = str(user["_id"])
+    return users
+
+# check if username already exists in users collection
+async def check_username(username: str):
+    existing_user = await db["users"].find_one({"username": username})
+    if existing_user:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content="Username already exists")
+
+# check if email already exists in users collection
+async def check_email(email: str):
+    existing_email = await db["users"].find_one({"email": email})
+    if existing_email:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content="Email already exists")
+
+# check if email is valid format
+async def check_email_format(email: str):
+    print(email)
+    try:
+        email_validator.validate_email(email)
+    except email_validator.EmailNotValidError as e:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+
+# get results when given age category and level
+@app.get("/benchmarkTimes/{category}/{level}", response_description="Get results")
+async def get_results(category: str, level: str):
     category_name = category.replace(" ", "")
     collection_name = category_name+"BenchmarkTimes"
     print(collection_name)
-    students_data = await db[collection_name].find({"level": level, "distance": distance}).to_list(1000)
+    students_data = await db[collection_name].find({"level": level}).to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+
+    if students:
+        return students
+    raise HTTPException(status_code=404, detail=f"{collection_name} not found")
+
+# get benchmark times for an age category and weight class
+@app.get("/benchmarkTimes/{category}", response_description="Get benchmark times")
+async def get_benchmark_times(category: str):
+    category_name = category.replace(" ", "")
+    collection_name = category_name+"BenchmarkTimes"
+    print(collection_name)
+    students_data = await db[collection_name].find().to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+
+    if students:
+        return students
+    raise HTTPException(status_code=404, detail=f"{collection_name} not found")
+
+# Get benchmark times for a specific category, level, and distance
+@app.get("/benchmarkTimes/{category}/{level}/{distance}", response_description="Get benchmark times")
+async def get_benchmark_times(category: str, level: str, distance: str):
+    category_name = category.replace(" ", "")
+    collection_name = category_name+"BenchmarkTimes"
+    print(collection_name)
+    students_data = await db[collection_name].find({"level": level, "distance": int(distance)}).to_list(1000)
     students = [BenchmarkTimesModel(**student) for student in students_data]
 
     if students:

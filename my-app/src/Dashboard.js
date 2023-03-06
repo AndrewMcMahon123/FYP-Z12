@@ -71,7 +71,7 @@ console.log("Data", chartData);
     window.location.href = "/auth";
   }
 
-  // if (validToken && loggedInUser === "true") {
+//   if (validToken && loggedInUser === "true") {
   return (
     <div>
       <NavBarSticky />
