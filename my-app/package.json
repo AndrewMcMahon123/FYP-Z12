@@ -23,6 +23,7 @@
     "react-chartkick": "^0.5.3",
     "react-charts": "^3.0.0-beta.54",
     "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.0",
     "react-password-checklist": "^1.4.3",
     "react-password-strength-bar": "^0.4.1",
     "react-router-dom": "^6.8.0",

@@ -1,8 +1,5 @@
-import asyncio
 import os
-import re
 import email_validator
-import uuid
 from typing import Optional, List
 import motor as motor
 from bson import ObjectId, json_util
@@ -21,6 +18,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from motor import motor_asyncio
+from password_strength import PasswordPolicy
 
 middleware = [
     Middleware(
@@ -35,6 +33,13 @@ client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGODB_URL"])
 db = client.college
 
 app = FastAPI(middleware=middleware)
+
+policy = PasswordPolicy.from_names(
+    length=8,  # min length: 8
+    uppercase=1,  # need min. 2 uppercase letters
+    numbers=1,  # need min. 2 digits
+    special=1,  # need min. 2 special characters
+)
 
 
 class PyObjectId(ObjectId):
@@ -147,8 +152,10 @@ async def register_user(username: str = Body(...), password: str = Body(...), em
     await check_username(username)
     await check_email(email)
     await check_email_format(email)
+    await check_password(password)
+    hashed_password = pwd_context.hash(password)
 
-    user = Userr(username, password, email)
+    user = Userr(username, hashed_password, email)
     new_user = await db["users"].insert_one(user.__dict__)
     created_user = await db["users"].find_one({"_id": new_user.inserted_id})
     created_user["_id"] = str(created_user["_id"])
@@ -166,21 +173,27 @@ async def list_users():
 async def check_username(username: str):
     existing_user = await db["users"].find_one({"username": username})
     if existing_user:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content="Username already exists")
+        raise HTTPException(status_code=400, detail="Username already exists")
 
 # check if email already exists in users collection
 async def check_email(email: str):
     existing_email = await db["users"].find_one({"email": email})
     if existing_email:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content="Email already exists")
+        raise HTTPException(status_code=400, detail="Email already exists")
 
 # check if email is valid format
 async def check_email_format(email: str):
-    print(email)
     try:
         email_validator.validate_email(email)
     except email_validator.EmailNotValidError as e:
         raise HTTPException(status_code=400, detail="Invalid email format")
+
+async def check_password(password: str):
+    password_test = policy.test(password)
+    if len(password_test) > 0:
+        raise HTTPException(status_code=400, detail="Password does not meet requirements")
+
+
 
 # get results when given age category and level
 @app.get("/benchmarkTimes/{category}/{level}", response_description="Get results")
@@ -404,7 +417,8 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 # get user with username from database
 async def get_user_from_db(username: str):
-    user = await db["students"].find_one({"name": username})
+    user = await db["users"].find_one({"username": username})
+    user["_id"] = str(user["_id"])
     if user is None:
         return None
     return user

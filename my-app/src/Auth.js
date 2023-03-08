@@ -99,7 +99,7 @@ const LoginComponent = () => {
           )}
 
           <p className="forgot-password text-right mt-2">
-            Forgot <a href="#">password?</a>
+            <a href="/register">Register</a>
           </p>
         </div>
       </form>
