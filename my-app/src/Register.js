@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PasswordChecklist from "react-password-checklist"
 import toast, { Toaster } from 'react-hot-toast';
 import {NavBarFixed} from "./Navbar";
 
 const RegistrationComponent = () => {
+
+const navigate = useNavigate();
 
 const [username, setUsername] = useState("");
 const [password, setPassword] = useState("");
@@ -44,6 +47,26 @@ const handleRegister = async (event) => {
         body: JSON.stringify({ username, password, email }),
     });
     const data = await response.json();
+    console.log('WESPONSE', data);
+    if (data == 'User created successfully') {
+        const response = await fetch("http://localhost:4000/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username, password: password }),
+        });
+        const data = await response.json();
+        if (data.access_token) {
+          localStorage.setItem("token", data.access_token);
+          localStorage.setItem("authenticated", true);
+          localStorage.setItem("username", username);
+          navigate("/createprofile");
+        }
+
+
+
+
+    navigate("/createprofile");
+    }
     if (data.detail == 'Invalid email format') {
         toast.error('Invalid email format');
     }

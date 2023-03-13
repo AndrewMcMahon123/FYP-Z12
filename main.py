@@ -1,4 +1,5 @@
 import os
+import uuid
 import email_validator
 from typing import Optional, List
 import motor as motor
@@ -141,9 +142,23 @@ class Userr():
 
     # constructor
     def __init__(self, username, password, email):
+        self.user_id = str(uuid.uuid4())
         self.username = username
         self.password = password
         self.email = email
+
+class UserProfile():
+
+    def __init__(self, user_id, first_name, last_name, gender, date_of_birth, weight, height, club):
+        self.user_id = user_id
+        self.first_name = first_name
+        self.last_name = last_name
+        self.gender = gender
+        self.date_of_birth = date_of_birth
+        self.weight = weight
+        self.height = height
+        self.club = club
+
 
 
 #register a new user
@@ -159,7 +174,7 @@ async def register_user(username: str = Body(...), password: str = Body(...), em
     new_user = await db["users"].insert_one(user.__dict__)
     created_user = await db["users"].find_one({"_id": new_user.inserted_id})
     created_user["_id"] = str(created_user["_id"])
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='User created successfully')
 
 # list all users
 @app.get("/users", response_description="List all users")
@@ -168,6 +183,27 @@ async def list_users():
     for user in users:
         user["_id"] = str(user["_id"])
     return users
+
+#get user_id of user
+@app.get("/get_user/{username}", response_description="Get a single user")
+async def show_user(username: str):
+    if (await db["users"].find_one({"username": username})) is not None:
+        user = await db["users"].find_one({"username": username})
+        user["_id"] = str(user["_id"])
+        return user
+    raise HTTPException(status_code=404, detail=f"User {username} not found")
+
+#  create user profile
+@app.post("/create_profile", response_description="Create a new user profile")
+async def create_profile(first_name: str = Body(...), last_name: str = Body(...), gender: str = Body(...),
+                         date_of_birth: str = Body(...), height: int = Body(...), weight: int = Body(...),
+                         club: str = Body(...), user_id: str = Body(...)):
+    user = UserProfile(user_id, first_name, last_name, gender, date_of_birth, height, weight, club)
+    new_user = await db["user_profile"].insert_one(user.__dict__)
+    created_user = await db["user_profile"].find_one({"_id": new_user.inserted_id})
+    created_user["_id"] = str(created_user["_id"])
+    print(created_user)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='User profile created successfully')
 
 # check if username already exists in users collection
 async def check_username(username: str):
@@ -358,6 +394,21 @@ def get_user(db, username: str):
         print(user_dict)
         return UserInDB(**user_dict)
 
+# get user from users mongo collection
+async def get_user_from_db(username: str):
+    user = await db["users"].find_one({"username": username})
+    print(user)
+    if user:
+        return UserInDB(**user)
+
+
+#get id from token
+def get_id_from_token(token):
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])['sub']
+    
+
+
+
 def authenticate_user(fake_db, username: str, password: str):
     user = get_user(fake_db, username)
     if not user:
@@ -401,13 +452,31 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user_from_db(token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-
+@app.get("/current_user")
+async def get_cur_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload["sub"]['username']
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = get_user_from_db(username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
