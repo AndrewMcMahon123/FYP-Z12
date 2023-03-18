@@ -1,6 +1,11 @@
+import io
 import os
 import uuid
 import email_validator
+import csv
+import random
+from datetime import datetime, timedelta
+from fastapi.responses import StreamingResponse
 from typing import Optional, List
 import motor as motor
 from bson import ObjectId, json_util
@@ -229,6 +234,58 @@ async def check_password(password: str):
     if len(password_test) > 0:
         raise HTTPException(status_code=400, detail="Password does not meet requirements")
 
+# generate results data
+@app.post("/generateResults", response_description="Generate results")
+async def generate_results(user_id : str = Body(...)):
+    headers = ['100m', '500m', '2000m', '6000m', '10000m']
+    rows = []
+
+    start_date = datetime(2022, 1, 1)
+    end_date = datetime(2022, 12, 31)
+
+    for header in headers:
+        for i in range(10):
+            date = start_date + timedelta(days=random.randint(0, 364))
+            value = random.randint(50, 100)
+            rows.append([date.strftime('%Y-%m-%d'), header, value])
+
+    with open(f'{user_id}.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['date', 'distance', 'value'])
+        writer.writerows(rows)
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results generated successfully')
+
+
+@app.get('/download')
+async def download_csv(user_id: str):
+    headers = ['100m', '500m', '2000m', '6000m', '10000m']
+    rows = []
+
+    start_date = datetime(2022, 1, 1)
+    end_date = datetime(2022, 12, 31)
+
+    for header in headers:
+        for i in range(10):
+            date = start_date + timedelta(days=random.randint(0, 364))
+            value = random.randint(50, 100)
+            rows.append([date.strftime('%Y-%m-%d'), header, value])
+
+    response = StreamingResponse(generate_csv(rows), headers={
+        'Content-Disposition': f'attachment; filename="{user_id}.csv"',
+        'Content-Type': 'text/csv',
+    })
+
+    return response
+
+
+
+async def generate_csv(rows):
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(['date', 'distance', 'value'])
+    writer.writerows(rows)
+    yield buffer.getvalue().encode('utf-8')
 
 
 # get results when given age category and level
