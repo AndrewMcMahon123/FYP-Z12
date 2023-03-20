@@ -32,29 +32,26 @@ const downloadCSV = async () => {
     setResultsGenerated(true);
 }
 
-//const generateResults = async () => {
-//    toast.promise(fetch('http://localhost:4000/download?user_id='+username+''),
-//    {
-//        loading: 'Generating Results',
-//        success: 'Results Generated',
-//        error: 'Error Generating Results'
-//    }
-//      ).then(() => {
-//    setResultsGenerated(true);
-//  }).catch(() => {
-//    console.log('ERROR');
-//  });
-//    }
 
-  const generateResults = async () => {
-    try {
-      const response = await axios.get('http://localhost:4000/download?user_id='+username+'');
+  const generateRes = async () => {
+//    try {
+      const response = await axios.get('http://localhost:4000/download?user_name='+username+'');
       setDownloadedCsvData(response.data);
       setResultsGenerated(true);
-    } catch (error) {
-      console.log('ERROR', error);
-    }
+//    } catch (error) {
+//      console.log('ERROR', error);
+//    }
   };
+
+  const generateResults = async () => {
+  toast.promise(generateRes(), {
+    loading: 'Generating results...',
+    success: 'Results generated!',
+    error: 'Results already generated for this user.',
+    });
+    };
+
+
 
 //  const downloadResults = () => {
 //    const downloadLink = document.createElement('a');
@@ -67,7 +64,7 @@ const downloadCSV = async () => {
 
     const downloadResults = () => {
     const downloadLink = document.createElement('a');
-    downloadLink.setAttribute('href', 'http://localhost:4000/download?user_id='+username+'');
+    downloadLink.setAttribute('href', 'http://localhost:4000/download?user_name='+username+'');
     downloadLink.setAttribute('download', `${localStorage.getItem('username')}.csv`);
     document.body.appendChild(downloadLink);
     downloadLink.click();
@@ -112,18 +109,12 @@ return (
                     <div class="form-outline flex-fill mb-0">
                      <button type="button" class="btn btn-primary btn-block"
                      onClick={generateResults}
+                     disabled={resultsGenerated}
                      >Generate Results</button>
                     </div>
                   </div>
 
-                  <BasicModal />
-
-                  <div class="d-flex flex-row align-items-center mb-4">
-                    <i class="fas fa-user fa-lg me-3 fa-fw"></i>
-                    <div class="form-outline flex-fill mb-0">
-                     <button type="button" class="btn btn-primary btn-block" disabled={disableButton}>View Results</button>
-                    </div>
-                  </div>
+                  <BasicModal text={downloadedCsvData} />
 
                     <div class="d-flex flex-row align-items-center mb-4">
                     <i class="fas fa-user fa-lg me-3 fa-fw"></i>

@@ -251,15 +251,17 @@ async def generate_results(user_id : str = Body(...)):
 
     with open(f'{user_id}.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['date', 'distance', 'value'])
+        writer.writerow(['Date', 'Distance', 'Time'])
         writer.writerows(rows)
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results generated successfully')
 
 
 @app.get('/download')
-async def download_csv(user_id: str):
-    headers = ['100m', '500m', '2000m', '6000m', '10000m']
+async def download_csv(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    await check_results_exist(user_id)
+    headers = ['100m', '500m', '1000m', '2000m', '6000m', '10000m']
     rows = []
 
     start_date = datetime(2022, 1, 1)
@@ -268,24 +270,78 @@ async def download_csv(user_id: str):
     for header in headers:
         for i in range(10):
             date = start_date + timedelta(days=random.randint(0, 364))
-            value = random.randint(50, 100)
+            if header == '100m':
+                value = random.randint(70, 92)
+            elif header == '500m':
+                value = random.randint(75, 95)
+            elif header == '1000m':
+                value = random.randint(84, 101)
+            elif header == '2000m':
+                value = random.randint(86, 105)
+            elif header == '6000m':
+                value = random.randint(92, 111)
+            elif header == '10000m':
+                value = random.randint(96, 114)
             rows.append([date.strftime('%Y-%m-%d'), header, value])
 
     response = StreamingResponse(generate_csv(rows), headers={
-        'Content-Disposition': f'attachment; filename="{user_id}.csv"',
+        'Content-Disposition': f'attachment; filename="{user_name}.csv"',
         'Content-Type': 'text/csv',
     })
 
-    return response
+    row_array = []
+    for row in rows:
+        row_array.append(row)
 
+
+    await add_results(user_name, row_array)
+    return response
 
 
 async def generate_csv(rows):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(['date', 'distance', 'value'])
+    writer.writerow(['Date', 'Distance', 'Time'])
     writer.writerows(rows)
     yield buffer.getvalue().encode('utf-8')
+
+
+# add generated results to database
+async def add_results(user_name, csv_file):
+    dbase = db["user_results"]
+    user_id = await get_userid_from_username(user_name)
+    #csv is a list
+    for row in csv_file:
+        print(row)
+        dbase.insert_one({"user_id": user_id, "date": row[0], "distance": row[1], "time": row[2]})
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results added successfully')
+
+# check if user results already exist in database
+async def check_results_exist(user_id: str):
+    existing_results = await db["user_results"].find_one({"user_id": user_id})
+    if existing_results:
+        raise HTTPException(status_code=400, detail="Results already exist")
+
+class ResultsModel(BaseModel):
+    user_id: str
+    date: str
+    distance: str
+    time: str
+@app.get("/allResults", response_description="Get all results")
+async def get_all_results():
+    results_data = await db["user_results"].find().to_list(1000)
+    results = [ResultsModel(**result) for result in results_data]
+
+    if results:
+        return results
+    raise HTTPException(status_code=404, detail="No results found")
+
+async def get_userid_from_username(username: str):
+    user = await db["users"].find_one({"username": username})
+    if user:
+        return user["user_id"]
+    raise HTTPException(status_code=404, detail="User not found")
 
 
 # get results when given age category and level
