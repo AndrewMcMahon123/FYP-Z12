@@ -174,7 +174,7 @@ return (
 
               </div>
               <div class="col-md-10 col-lg-6 col-xl-7 d-flex align-items-center order-1 order-lg-2">
-                  <img src="https://scontent.fdub5-2.fna.fbcdn.net/v/t39.30808-6/310578703_500439622100980_5259821817363940372_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=e3f864&_nc_ohc=LtAkSLq_bDAAX_uj00D&_nc_ht=scontent.fdub5-2.fna&oh=00_AfC6zbYCCcfQUBH1MHoQMSuXR5O30tndg0eyn_srESTc-A&oe=640CA5E3"
+                  <img src="https://scontent.fdub5-2.fna.fbcdn.net/v/t39.30808-6/310578703_500439622100980_5259821817363940372_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=e3f864&_nc_ohc=dVX_C_yPP88AX95A6N_&_nc_ht=scontent.fdub5-2.fna&oh=00_AfC2_D-O9Cl8JDUPa-u1hTx0LQPBgKv0699T6JmkZZ8Lvg&oe=64188363"
                   class="img-fluid" alt="Sample image"></img>
               </div>
             </div>

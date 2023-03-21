@@ -189,6 +189,12 @@ async def list_users():
         user["_id"] = str(user["_id"])
     return users
 
+# delete all users
+@app.delete("/users", response_description="Delete all users")
+async def delete_users():
+    await db["users"].delete_many({})
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content='All users deleted')
+
 #get user_id of user
 @app.get("/get_user/{username}", response_description="Get a single user")
 async def show_user(username: str):
@@ -209,6 +215,20 @@ async def create_profile(first_name: str = Body(...), last_name: str = Body(...)
     created_user["_id"] = str(created_user["_id"])
     print(created_user)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='User profile created successfully')
+
+# get all user profiles
+@app.get("/user_profiles", response_description="List all user profiles")
+async def list_user_profiles():
+    user_res = await db["user_profile"].find().to_list(1000)
+    for user in user_res:
+        user["_id"] = str(user["_id"])
+    return user_res
+
+# delete all user profiles
+@app.delete("/delete_user_profiles", response_description="Delete all user profiles")
+async def delete_user_profiles():
+    user_res = await db["user_profile"].delete_many({})
+    return JSONResponse(status_code=status.HTTP_200_OK, content='All user profiles deleted successfully')
 
 # check if username already exists in users collection
 async def check_username(username: str):
@@ -256,6 +276,24 @@ async def generate_results(user_id : str = Body(...)):
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results generated successfully')
 
+
+# get all results from user
+@app.get("/results", response_description="Get all results")
+async def get_results(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    print(user_id)
+    user_results = await db["user_results"].find({"user_id": user_id}).to_list(1000)
+    for result in user_results:
+        result["_id"] = str(result["_id"])
+    return user_results
+
+# get user_profile from user_name
+@app.get("/user_profile", response_description="Get user profile")
+async def get_user_profile(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    user_profile = await db["user_profile"].find_one({"user_id": user_id})
+    user_profile["_id"] = str(user_profile["_id"])
+    return user_profile
 
 @app.get('/download')
 async def download_csv(user_name: str):
@@ -323,11 +361,29 @@ async def check_results_exist(user_id: str):
     if existing_results:
         raise HTTPException(status_code=400, detail="Results already exist")
 
+#get user from token
+@app.post("/user_token", response_description="Get user from token")
+async def get_user_from_token(token: str = Body(None, embed=True)):
+    return await get_payload_from_token(token)
+
+# get payload from token
+async def get_payload_from_token(token: str):
+    decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    return decoded_token
+
+
 class ResultsModel(BaseModel):
     user_id: str
     date: str
     distance: str
     time: str
+
+class UserModel(BaseModel):
+    user_id: str
+    username: str
+    email: str
+    password: str
+
 @app.get("/allResults", response_description="Get all results")
 async def get_all_results():
     results_data = await db["user_results"].find().to_list(1000)
@@ -336,6 +392,16 @@ async def get_all_results():
     if results:
         return results
     raise HTTPException(status_code=404, detail="No results found")
+
+# print all users in database
+@app.get("/allUsers", response_description="Get all users")
+async def get_all_users():
+    users_data = await db["users"].find().to_list(1000)
+    users = [UserModel(**user) for user in users_data]
+
+    if users:
+        return users
+    raise HTTPException(status_code=404, detail="No users found")
 
 async def get_userid_from_username(username: str):
     user = await db["users"].find_one({"username": username})
@@ -600,9 +666,9 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 # get user with username from database
 async def get_user_from_db(username: str):
     user = await db["users"].find_one({"username": username})
-    user["_id"] = str(user["_id"])
     if user is None:
         return None
+    user["_id"] = str(user["_id"])
     return user
 
 @app.post("/token", response_model=Token)

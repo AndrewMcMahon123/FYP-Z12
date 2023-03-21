@@ -3,6 +3,7 @@ import { Graph, KpiCard, Tabss, Benchmarkk } from "./Dash";
 import { NavBarSticky } from "./Navbar";
 import { Data, Data2 } from "./Data";
 import BenchmarkChart from "./BenchmarkChart";
+import toast, { Toaster } from 'react-hot-toast';
 
 const Dashboard = () => {
 
@@ -42,6 +43,27 @@ console.log("Data", chartData);
   const token = localStorage.getItem("token");
   let initialized = false;
 
+const username = localStorage.getItem("username");
+
+useEffect(() => {
+    const response = fetch("http://localhost:4000/user_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token }),
+    }
+    ).then((response) => response.json())
+    .then((data) => {
+    if(data.sub.username !== username){
+    toast.error("Username does not match the token...\n Redirecting to login page...");
+//    localStorage.setItem("authenticated", "false");
+        setTimeout(() => {
+        window.location.href = "/auth";
+    }, 2000);
+    }
+    }
+    );
+    }, []);
+
   useEffect(() => {
     if (token.length > 0 && loggedInUser === "true") {
         async function verifyToken() {
@@ -71,14 +93,45 @@ console.log("Data", chartData);
     window.location.href = "/auth";
   }
 
+  const [userInformation, setUserInformation] = useState({});
+  useEffect(() => {
+    if (token.length > 0 && loggedInUser === "true") {
+      async function getUserInformation() {
+      const username = localStorage.getItem("username");
+        const response = await fetch("http://localhost:4000/user_profile?user_name="+username, {
+          method: "GET",
+          headers: { "Content-Type": "application/json", "X-Token": token },
+        });
+        const data = await response.json();
+        setUserInformation(data);
+      }
+      getUserInformation();
+    }
+  }
+    , []);
+
+    function getAgeFromBirthday(birthday) {
+      const today = new Date();
+      const birthDate = new Date(birthday);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    console.log("userInformation", userInformation);
+
 //   if (validToken && loggedInUser === "true") {
   return (
     <div>
       <NavBarSticky />
+      <Toaster />
       <div class="col-sm-8">
         <div class="col-sm-3">
           <div class="well">
-            <h4 class="text-center">John Doe</h4>
+            <h4 class="text-center">{userInformation.first_name} {userInformation.last_name}</h4>
             <div class="d-flex">
               <img
                 src={require("./man.jpg")}
@@ -87,9 +140,9 @@ console.log("Data", chartData);
                 height="50px"
               />
               <div class="p-2 ">
-                <h4>Age: 25</h4>
-                <h4>Height: 5'10"</h4>
-                <h4>Weight: 180lbs</h4>
+                <h4>Age: {getAgeFromBirthday(userInformation.date_of_birth)}</h4>
+                <h4>Height: {userInformation.height}cm</h4>
+                <h4>Weight: {userInformation.weight}kg</h4>
               </div>
             </div>
           </div>
@@ -100,7 +153,7 @@ console.log("Data", chartData);
             <h4 class="text-center">Athlete Information</h4>
             <div class="p-0">
               <p>Category: J18</p>
-              <p>Club: St. Michaels</p>
+              <p>Club: {userInformation.club}</p>
               <p>Coach: Jimmy</p>
               <p>Next race: 23/02/2023 | Limerick | 100m</p>
             </div>

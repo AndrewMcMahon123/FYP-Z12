@@ -10,6 +10,7 @@ import {
 } from '@tremor/react';
 
 import Select from 'react-select';
+import axios from 'axios';
 
 import * as moment from 'moment';
 import 'moment-duration-format';
@@ -101,13 +102,10 @@ const weightOptions = [
 
     const [setGender, setGenderOption] = useState(null);
 //    const [setGender, setGenderOption] = useState(genderOptions[0].value);
-    console.log(setGender);
     const [setAge, setAgeOption] = useState(null);
 //    const [setAge, setAgeOption] = useState(ageOptions[0].value);
-    console.log(setAge);
     const [setWeight, setWeightOption] = useState(null);
 //    const [setWeight, setWeightOption] = useState(weightOptions[0].value);
-    console.log(setWeight);
         const [benchmarkActiveTab, setBenchmarkActiveTab] = useState(0);
 
 
@@ -120,11 +118,20 @@ const weightOptions = [
 
     const [gr, setGr] = useState([{"category":"Jr 70kg Men","level":"Elite1","distance":100,"time":78},{"category":"Jr 70kg Men","level":"Elite1","distance":500,"time":84},{"category":"Jr 70kg Men","level":"Elite1","distance":1000,"time":90},{"category":"Jr 70kg Men","level":"Elite1","distance":2000,"time":93},{"category":"Jr 70kg Men","level":"Elite1","distance":6000,"time":99},{"category":"Jr 70kg Men","level":"Elite1","distance":10000,"time":102}]);
 
+    const username = localStorage.getItem('username');
+//    const get_user_results = async () => {
+//    const response = await axios.get('http://localhost:4000/results?user_name='+username+'' );
+//    const data = response.data;
+//    console.log(data);
+//    }
+
+//    const [userData, setUserData] = useState([]);
+//useEffect(() => {
+
 
 
     useEffect(() => {
     async function submit() {
-    console.log("GENDERR", setGender);
     const category = "Jr 70Kg Men";
     const level = "Development1";
     const distance = "100";
@@ -162,12 +169,10 @@ const weightOptions = [
     }
 
     const categoryFormed = getAge()+''+getWeight()+''+gender;
-    console.log('GRRR', benchmarkSets[0])
 
     const response = await fetch("http://localhost:4000/benchmarkTimes/"+categoryFormed+"/"+activeLevel);
     const data = await response.json();
     await setGr(data);
-    console.log('BGFOIDS', gr);
     }
     submit();
     }, [setGender, setAge, setWeight, benchmarkActiveTab]);
@@ -194,7 +199,6 @@ const weightOptions = [
     return Number(minutes) * 60 + Number(seconds);
 };
 
-console.log('LOOK HERE', jsonToArray(gr));
 
 
 const [chartData, setChartData] = useState({
@@ -350,39 +354,105 @@ function GenderDropdown(props) {
   );
 }
 
+const [userResults, setUserResults] = useState([]);
+const [resultsArray, setResultsArray] = useState([[], [], [], [], [], []]);
 
 useEffect(() => {
-  const dataSets = [Data2, Data3, Data4, Data5, Data6, Data7];
-  const data = dataSets[resultsActiveTab];
-  const labels = data.map((data) => moment(data.date, 'YYYY-MM-DD').format('YYYY-MM-DD'));
-  const splits = data.map((data) => parseInt(data.split));
-  const averageSplit = splits.reduce((a, b) => a + b, 0) / splits.length;
+    async function get_user_results() {
+        const user_results = await fetch('http://localhost:4000/results?user_name='+username+'');
+        const data = await user_results.json();
+        setUserResults(data);
+    }
+    get_user_results();
+}, []);
 
-  setResultsData((prevState) => ({
-    ...prevState,
-    labels: labels,
-    datasets: [
-      {
-        ...prevState.datasets[0],
-        data: splits,
-      },
-      {
-        ...prevState.datasets[1],
-        data: Array(labels.length).fill(averageSplit),
-      }
-    ]
-  }));
-}, [resultsActiveTab]);
+useEffect(() => {
+    function resultsByDistance() {
+        const newResultsArray = [[], [], [], [], [], []];
+        for(let i = 0; i < userResults.length; i++) {
+            const distance = userResults[i].distance;
+            const time = userResults[i].time;
+            const date = userResults[i].date;
+            const result = {
+                distance: distance,
+                time: time,
+                date: date
+            }
+            if (distance === '100m') {
+                newResultsArray[0].push(result);
+            } else if (distance === '500m') {
+                newResultsArray[1].push(result);
+            } else if (distance === '1000m') {
+                newResultsArray[2].push(result);
+            } else if (distance === '2000m') {
+                newResultsArray[3].push(result);
+            } else if (distance === '6000m') {
+                newResultsArray[4].push(result);
+            } else if (distance === '10000m') {
+                newResultsArray[5].push(result);
+            }
+        }
+        setResultsArray(newResultsArray);
+    }
+    resultsByDistance();
+}, [userResults]);
+
+function sortResultsArrayByDate(array) {
+    array.sort(function(a, b) {
+        var dateA = new Date(a.date), dateB = new Date(b.date);
+        return dateA - dateB;
+    });
+}
+
+
+// convert userResults to array
+function userToArray(json) {
+    const array = [];
+    for (let i = 0; i < json.length; i++) {
+        array.push(json[i]);
+    }
+    return array;
+}
+
+useEffect(() => {
+  if (userResults.length > 0) {
+    const dataSets = Object.values(userResults);
+
+    const data = resultsArray[resultsActiveTab].sort(function(a, b) {
+        var dateA = new Date(a.date), dateB = new Date(b.date);
+        return dateA - dateB;
+    }
+    );
+    const labels = data.map((data) => data.date);
+    const splits = data.map((data) => (data.time));
+
+    const averageSplit = splits.reduce((a, b) => a + b, 0) / splits.length;
+
+    setResultsData((prevState) => ({
+      ...prevState,
+      labels: labels,
+      datasets: [
+        {
+          ...prevState.datasets[0],
+          data: splits,
+        },
+        {
+          ...prevState.datasets[1],
+          data: Array(labels.length).fill(averageSplit),
+        }
+      ]
+    }));
+  }
+}, [userResults, resultsActiveTab, resultsArray]);
+
 
 
   function handleResultsTabSelect(index) {
     setResultsActiveTab(index);
-    console.log(`Selected tab index is ${index}`);
   }
 
   function handleBenchmarkTabSelect(index) {
     setBenchmarkActiveTab(index);
-    console.log(`Selected tab index is ${index}`);
 
   }
 
