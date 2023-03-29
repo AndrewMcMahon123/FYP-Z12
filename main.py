@@ -1,5 +1,11 @@
-import asyncio
+import io
 import os
+import uuid
+import email_validator
+import csv
+import random
+from datetime import datetime, timedelta
+from fastapi.responses import StreamingResponse
 from typing import Optional, List
 import motor as motor
 from bson import ObjectId, json_util
@@ -18,6 +24,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from motor import motor_asyncio
+from password_strength import PasswordPolicy
 
 middleware = [
     Middleware(
@@ -32,6 +39,13 @@ client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGODB_URL"])
 db = client.college
 
 app = FastAPI(middleware=middleware)
+
+policy = PasswordPolicy.from_names(
+    length=8,  # min length: 8
+    uppercase=1,  # need min. 2 uppercase letters
+    numbers=1,  # need min. 2 digits
+    special=1,  # need min. 2 special characters
+)
 
 
 class PyObjectId(ObjectId):
@@ -89,6 +103,8 @@ class UpdateStudentModel(BaseModel):
             }
         }
 
+
+
 class BenchmarkTimesModel(BaseModel):
     category: str
     level: str
@@ -125,13 +141,308 @@ class UpdateBenchmarkTimesModel(BaseModel):
                 "time": 10,
             }
         }
-# Get benchmark times for a specific category, level, and distance
-@app.get("/benchmarkTimes/{category}/{level}/{distance}", response_description="Get benchmark times")
-async def get_benchmark_times(category: str, level: str, distance: int):
+
+
+class Userr():
+
+    # constructor
+    def __init__(self, username, password, email):
+        self.user_id = str(uuid.uuid4())
+        self.username = username
+        self.password = password
+        self.email = email
+
+class UserProfile():
+
+    def __init__(self, user_id, first_name, last_name, gender, date_of_birth, weight, height, club):
+        self.user_id = user_id
+        self.first_name = first_name
+        self.last_name = last_name
+        self.gender = gender
+        self.date_of_birth = date_of_birth
+        self.weight = weight
+        self.height = height
+        self.club = club
+
+
+
+#register a new user
+@app.post("/register", response_description="Register a new user")
+async def register_user(username: str = Body(...), password: str = Body(...), email: str = Body(...)):
+    await check_username(username)
+    await check_email(email)
+    await check_email_format(email)
+    await check_password(password)
+    hashed_password = pwd_context.hash(password)
+
+    user = Userr(username, hashed_password, email)
+    new_user = await db["users"].insert_one(user.__dict__)
+    created_user = await db["users"].find_one({"_id": new_user.inserted_id})
+    created_user["_id"] = str(created_user["_id"])
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='User created successfully')
+
+# list all users
+@app.get("/users", response_description="List all users")
+async def list_users():
+    users = await db["users"].find().to_list(1000)
+    for user in users:
+        user["_id"] = str(user["_id"])
+    return users
+
+# delete all users
+@app.delete("/users", response_description="Delete all users")
+async def delete_users():
+    await db["users"].delete_many({})
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content='All users deleted')
+
+#get user_id of user
+@app.get("/get_user/{username}", response_description="Get a single user")
+async def show_user(username: str):
+    if (await db["users"].find_one({"username": username})) is not None:
+        user = await db["users"].find_one({"username": username})
+        user["_id"] = str(user["_id"])
+        return user
+    raise HTTPException(status_code=404, detail=f"User {username} not found")
+
+#  create user profile
+@app.post("/create_profile", response_description="Create a new user profile")
+async def create_profile(first_name: str = Body(...), last_name: str = Body(...), gender: str = Body(...),
+                         date_of_birth: str = Body(...), height: int = Body(...), weight: int = Body(...),
+                         club: str = Body(...), user_id: str = Body(...)):
+    user = UserProfile(user_id, first_name, last_name, gender, date_of_birth, height, weight, club)
+    new_user = await db["user_profile"].insert_one(user.__dict__)
+    created_user = await db["user_profile"].find_one({"_id": new_user.inserted_id})
+    created_user["_id"] = str(created_user["_id"])
+    print(created_user)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='User profile created successfully')
+
+# get all user profiles
+@app.get("/user_profiles", response_description="List all user profiles")
+async def list_user_profiles():
+    user_res = await db["user_profile"].find().to_list(1000)
+    for user in user_res:
+        user["_id"] = str(user["_id"])
+    return user_res
+
+# delete all user profiles
+@app.delete("/delete_user_profiles", response_description="Delete all user profiles")
+async def delete_user_profiles():
+    user_res = await db["user_profile"].delete_many({})
+    return JSONResponse(status_code=status.HTTP_200_OK, content='All user profiles deleted successfully')
+
+# check if username already exists in users collection
+async def check_username(username: str):
+    existing_user = await db["users"].find_one({"username": username})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+# check if email already exists in users collection
+async def check_email(email: str):
+    existing_email = await db["users"].find_one({"email": email})
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+# check if email is valid format
+async def check_email_format(email: str):
+    try:
+        email_validator.validate_email(email)
+    except email_validator.EmailNotValidError as e:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+
+async def check_password(password: str):
+    password_test = policy.test(password)
+    if len(password_test) > 0:
+        raise HTTPException(status_code=400, detail="Password does not meet requirements")
+
+# generate results data
+@app.post("/generateResults", response_description="Generate results")
+async def generate_results(user_id : str = Body(...)):
+    headers = ['100m', '500m', '2000m', '6000m', '10000m']
+    rows = []
+
+    start_date = datetime(2022, 1, 1)
+    end_date = datetime(2022, 12, 31)
+
+    for header in headers:
+        for i in range(10):
+            date = start_date + timedelta(days=random.randint(0, 364))
+            value = random.randint(50, 100)
+            rows.append([date.strftime('%Y-%m-%d'), header, value])
+
+    with open(f'{user_id}.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Date', 'Distance', 'Time'])
+        writer.writerows(rows)
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results generated successfully')
+
+
+# get all results from user
+@app.get("/results", response_description="Get all results")
+async def get_results(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    print(user_id)
+    user_results = await db["user_results"].find({"user_id": user_id}).to_list(1000)
+    for result in user_results:
+        result["_id"] = str(result["_id"])
+    return user_results
+
+# get user_profile from user_name
+@app.get("/user_profile", response_description="Get user profile")
+async def get_user_profile(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    user_profile = await db["user_profile"].find_one({"user_id": user_id})
+    user_profile["_id"] = str(user_profile["_id"])
+    return user_profile
+
+@app.get('/download')
+async def download_csv(user_name: str):
+    user_id = await get_userid_from_username(user_name)
+    await check_results_exist(user_id)
+    headers = ['100m', '500m', '1000m', '2000m', '6000m', '10000m']
+    rows = []
+
+    start_date = datetime(2022, 1, 1)
+    end_date = datetime(2022, 12, 31)
+
+    for header in headers:
+        for i in range(10):
+            date = start_date + timedelta(days=random.randint(0, 364))
+            if header == '100m':
+                value = random.randint(70, 92)
+            elif header == '500m':
+                value = random.randint(75, 95)
+            elif header == '1000m':
+                value = random.randint(84, 101)
+            elif header == '2000m':
+                value = random.randint(86, 105)
+            elif header == '6000m':
+                value = random.randint(92, 111)
+            elif header == '10000m':
+                value = random.randint(96, 114)
+            rows.append([date.strftime('%Y-%m-%d'), header, value])
+
+    response = StreamingResponse(generate_csv(rows), headers={
+        'Content-Disposition': f'attachment; filename="{user_name}.csv"',
+        'Content-Type': 'text/csv',
+    })
+
+    row_array = []
+    for row in rows:
+        row_array.append(row)
+
+
+    await add_results(user_name, row_array)
+    return response
+
+
+async def generate_csv(rows):
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(['Date', 'Distance', 'Time'])
+    writer.writerows(rows)
+    yield buffer.getvalue().encode('utf-8')
+
+
+# add generated results to database
+async def add_results(user_name, csv_file):
+    dbase = db["user_results"]
+    user_id = await get_userid_from_username(user_name)
+    #csv is a list
+    for row in csv_file:
+        print(row)
+        dbase.insert_one({"user_id": user_id, "date": row[0], "distance": row[1], "time": row[2]})
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Results added successfully')
+
+# check if user results already exist in database
+async def check_results_exist(user_id: str):
+    existing_results = await db["user_results"].find_one({"user_id": user_id})
+    if existing_results:
+        raise HTTPException(status_code=400, detail="Results already exist")
+
+#get user from token
+@app.post("/user_token", response_description="Get user from token")
+async def get_user_from_token(token: str = Body(None, embed=True)):
+    return await get_payload_from_token(token)
+
+# get payload from token
+async def get_payload_from_token(token: str):
+    decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    return decoded_token
+
+
+class ResultsModel(BaseModel):
+    user_id: str
+    date: str
+    distance: str
+    time: str
+
+class UserModel(BaseModel):
+    user_id: str
+    username: str
+    email: str
+    password: str
+
+@app.get("/allResults", response_description="Get all results")
+async def get_all_results():
+    results_data = await db["user_results"].find().to_list(1000)
+    results = [ResultsModel(**result) for result in results_data]
+
+    if results:
+        return results
+    raise HTTPException(status_code=404, detail="No results found")
+
+# print all users in database
+@app.get("/allUsers", response_description="Get all users")
+async def get_all_users():
+    users_data = await db["users"].find().to_list(1000)
+    users = [UserModel(**user) for user in users_data]
+
+    if users:
+        return users
+    raise HTTPException(status_code=404, detail="No users found")
+
+async def get_userid_from_username(username: str):
+    user = await db["users"].find_one({"username": username})
+    if user:
+        return user["user_id"]
+    raise HTTPException(status_code=404, detail="User not found")
+
+
+# get results when given age category and level
+@app.get("/benchmarkTimes/{category}/{level}", response_description="Get results")
+async def get_results(category: str, level: str):
     category_name = category.replace(" ", "")
     collection_name = category_name+"BenchmarkTimes"
     print(collection_name)
-    students_data = await db[collection_name].find({"level": level, "distance": distance}).to_list(1000)
+    students_data = await db[collection_name].find({"level": level}).to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+
+    if students:
+        return students
+    raise HTTPException(status_code=404, detail=f"{collection_name} not found")
+
+# get benchmark times for an age category and weight class
+@app.get("/benchmarkTimes/{category}", response_description="Get benchmark times")
+async def get_benchmark_times(category: str):
+    category_name = category.replace(" ", "")
+    collection_name = category_name+"BenchmarkTimes"
+    print(collection_name)
+    students_data = await db[collection_name].find().to_list(1000)
+    students = [BenchmarkTimesModel(**student) for student in students_data]
+
+    if students:
+        return students
+    raise HTTPException(status_code=404, detail=f"{collection_name} not found")
+
+# Get benchmark times for a specific category, level, and distance
+@app.get("/benchmarkTimes/{category}/{level}/{distance}", response_description="Get benchmark times")
+async def get_benchmark_times(category: str, level: str, distance: str):
+    category_name = category.replace(" ", "")
+    collection_name = category_name+"BenchmarkTimes"
+    print(collection_name)
+    students_data = await db[collection_name].find({"level": level, "distance": int(distance)}).to_list(1000)
     students = [BenchmarkTimesModel(**student) for student in students_data]
 
     if students:
@@ -262,6 +573,21 @@ def get_user(db, username: str):
         print(user_dict)
         return UserInDB(**user_dict)
 
+# get user from users mongo collection
+async def get_user_from_db(username: str):
+    user = await db["users"].find_one({"username": username})
+    print(user)
+    if user:
+        return UserInDB(**user)
+
+
+#get id from token
+def get_id_from_token(token):
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])['sub']
+    
+
+
+
 def authenticate_user(fake_db, username: str, password: str):
     user = get_user(fake_db, username)
     if not user:
@@ -305,13 +631,31 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user_from_db(token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-
+@app.get("/current_user")
+async def get_cur_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload["sub"]['username']
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = get_user_from_db(username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
@@ -321,9 +665,10 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 # get user with username from database
 async def get_user_from_db(username: str):
-    user = await db["students"].find_one({"name": username})
+    user = await db["users"].find_one({"username": username})
     if user is None:
         return None
+    user["_id"] = str(user["_id"])
     return user
 
 @app.post("/token", response_model=Token)

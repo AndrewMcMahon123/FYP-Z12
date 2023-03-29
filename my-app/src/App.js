@@ -7,6 +7,9 @@ import Dashboard from "./Dashboard"
 import Home from "./Home"
 import NotFound from "./NotFound"
 import Blah from "./Blah"
+import Register from "./Register"
+import CreateProfile from "./CreateProfile"
+import GenerateData from "./GenerateData"
 import '@tremor/react/dist/esm/tremor.css';
 
 function App() {
@@ -22,6 +25,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/createprofile" element={<CreateProfile />} />
+        <Route path="generate-data" element={<GenerateData />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/home" element={<Home />} />
         <Route path="*" element={<NotFound />} />

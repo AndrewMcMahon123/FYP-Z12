@@ -20,9 +20,11 @@ export function NavBarFixed(){
               <li class="nav-item">
                 <a class="nav-link" href="#">Search</a>
               </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/auth">Log in</a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/auth">
+                        {localStorage.getItem('authenticated') && localStorage.getItem('validToken') && localStorage.getItem('username') && localStorage.getItem('token') ? 'Log out' : 'Log in'}
+                    </a>
+                </li>
           </ul>
             </div>
         </div>
@@ -53,9 +55,11 @@ export function NavBarSticky(){
               <li class="nav-item">
                 <a class="nav-link" href="#">Search</a>
               </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/auth">Log in</a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/auth">
+                        {localStorage.getItem('authenticated') && localStorage.getItem('validToken') && localStorage.getItem('username') && localStorage.getItem('token') ? 'Log out' : 'Log in'}
+                    </a>
+                </li>
           </ul>
             </div>
           </div>
