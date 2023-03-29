@@ -1,13 +1,4 @@
-import {
-    Badge,
-    Block,
-    Card,
-    Flex,
-    Metric,
-    ProgressBar,
-    Text,
-    Title,
-} from '@tremor/react';
+
 
 import Select from 'react-select';
 import axios from 'axios';
@@ -38,6 +29,8 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
+import {BenchmarkResultsTable} from "./BenchmarkResultsTable";
+
 import { LineChart, PieChart } from 'react-chartkick'
 import 'chartkick/chart.js'
 import { Data, Data2, Data3, Data4, Data5, Data6, Data7 } from "./Data"
@@ -46,35 +39,11 @@ import { Elite1, Elite2, Elite3, Elite4, PreElite1, PreElite2, PreElite3, PreEli
 
 import BenchmarkChart from "./BenchmarkChart";
 
+
 function formatSecondsToMinutesAndSeconds(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-
-// Single KPI card in the demo dashboard with sample inputs
-export function KpiCard() {
-    return (
-        <Card maxWidth="max-w-0 hFull">
-            <Flex alignItems="items-start">
-                <Block>
-                    <Metric>100m</Metric>
-                    <Text
-                    textAlignment="text-center"
-                    >00:21</Text>
-                </Block>
-                <Badge color="green" text="102%" />
-            </Flex>
-            <Flex marginTop="mt-4">
-                <Text truncate={ true }>
-                    102%
-                </Text>
-                <Text>00:25 </Text>
-            </Flex>
-            <ProgressBar percentageValue={ 102 } color="green" marginTop="mt-2" />
-        </Card>
-    );
 }
 
 
@@ -116,19 +85,23 @@ const weightOptions = [
     'Development1', 'Development2', 'Development3', 'Development4'];
     const activeLevel = levels[benchmarkActiveTab];
 
-    const [gr, setGr] = useState([{"category":"Jr 70kg Men","level":"Elite1","distance":100,"time":78},{"category":"Jr 70kg Men","level":"Elite1","distance":500,"time":84},{"category":"Jr 70kg Men","level":"Elite1","distance":1000,"time":90},{"category":"Jr 70kg Men","level":"Elite1","distance":2000,"time":93},{"category":"Jr 70kg Men","level":"Elite1","distance":6000,"time":99},{"category":"Jr 70kg Men","level":"Elite1","distance":10000,"time":102}]);
+const [gr, setGr] = useState([]);
 
-    const username = localStorage.getItem('username');
-//    const get_user_results = async () => {
-//    const response = await axios.get('http://localhost:4000/results?user_name='+username+'' );
-//    const data = response.data;
-//    console.log(data);
-//    }
+const username = localStorage.getItem('username');
 
-//    const [userData, setUserData] = useState([]);
-//useEffect(() => {
+async function getInitialBenchmarkData() {
+  const response = await fetch('http://localhost:4000/benchmarkTimes/Jr70KgMen/'+levels[benchmarkActiveTab])
+  const data = await response.json()
+  setGr(data);
+}
 
 
+
+useEffect(() => {
+  getInitialBenchmarkData();
+}, [benchmarkActiveTab]);
+
+    const [categoryFormed, setCategoryFormed] = useState('Jr70KgMen');
 
     useEffect(() => {
     async function submit() {
@@ -168,7 +141,8 @@ const weightOptions = [
       return setAge.value
     }
 
-    const categoryFormed = getAge()+''+getWeight()+''+gender;
+    setCategoryFormed(getAge()+''+getWeight()+''+gender);
+    localStorage.setItem('category', categoryFormed);
 
     const response = await fetch("http://localhost:4000/benchmarkTimes/"+categoryFormed+"/"+activeLevel);
     const data = await response.json();
@@ -452,9 +426,13 @@ useEffect(() => {
   }
 
   function handleBenchmarkTabSelect(index) {
+//    localStorage.setItem('benchmarkActiveTab', index);
     setBenchmarkActiveTab(index);
 
   }
+
+      const [personalBests, setPersonalBests] = useState([]);
+
 
   const benchmarkChangeOptions =
   {
@@ -462,10 +440,73 @@ useEffect(() => {
     animationDuration: 1000 // set the duration of animation in ms
   };
 
+   useEffect(() => {
+   async function getPersonalBests() {
+    const username = localStorage.getItem("username");
+    const response = await fetch('http://localhost:4000/results?user_name='+username+'');
+    const data = await response.json();
+
+    const lowestTimeForEachDistance = {};
+  // loop through each item in the API response
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+
+    // if this is the first time we've seen this distance, set the lowest time to this item's time
+    if (!lowestTimeForEachDistance[item.distance]) {
+      lowestTimeForEachDistance[item.distance] = item.time;
+    }
+    // otherwise, check if this item's time is lower than the current lowest time for this distance
+    else if (item.time < lowestTimeForEachDistance[item.distance]) {
+      lowestTimeForEachDistance[item.distance] = item.time;
+    }
+  }
+    setPersonalBests(Object.values(lowestTimeForEachDistance));
+    console.log('personalBests', personalBests);
+    }
+    getPersonalBests();
+    }, [benchmarkActiveTab]);
+
+
+//    const [categoryFormed, setCategoryFormed] = useState('Jr70KgMen');
+    const [benchmarkTimes, setBenchmarkTimes] = useState([
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 100, time: 78},
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 500, time: 84},
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 1000, time: 90},
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 2000, time: 93},
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 6000, time: 99},
+{category: 'Jr 70kg Men', level: 'Elite1', distance: 10000, time: 102}]);
+
+    useEffect(() => {
+    async function getBenchmarkTimes() {
+
+    const levels = ['Elite1', 'Elite2', 'Elite3', 'Elite4', 'PreElite1', 'PreElite2', 'PreElite3', 'PreElite4',
+    'Development1', 'Development2', 'Development3', 'Development4'];
+    console.log('levels', levels[benchmarkActiveTab]);
+
+    const response = await fetch('http://localhost:4000/benchmarkTimes/'+categoryFormed+'/'+levels[benchmarkActiveTab]+'');
+    const data = await response.json();
+
+    console.log('active tab', benchmarkActiveTab);
+    setBenchmarkTimes(Object.values(data));
+    console.log('benchmarkTimes', benchmarkTimes)
+    }
+    getBenchmarkTimes();
+    }, [benchmarkActiveTab, categoryFormed]);
+
+
+
+
+   function secondsToMMSS(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secondsLeft = seconds % 60;
+    return `${minutes}:${secondsLeft}`;
+   }
 
 
 return (
 <>
+      <div class="col-sm-6">
+        <div class="well">
 <Tabs forceRenderTabPanel={true} defaultIndex={0}>
 <TabList>
 <Tab>Results</Tab>
@@ -563,7 +604,78 @@ return (
 </Tabs>
 </TabPanel>
 </Tabs>
-</>
+</div>
+</div>
+      <div class="col-sm-6">
+        <div class="well">
+            <h3 class="text-center">Benchmark results for {categoryFormed}</h3>
+            <div>
+        <Table striped bordered hover>
+      <thead>
+        <tr>
+          <th>Distance</th>
+          <th>Time</th>
+          <th>Split</th>
+          <th>Benchmark Score</th>
+          <th>Benchmark Split</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>100</td>
+          <td>{secondsToMMSS(personalBests[0]/5)}</td>
+          <td>{secondsToMMSS(personalBests[0])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[0].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[0].time)}</td>
+          <td>{Math.floor((benchmarkTimes[0].time/personalBests[0])*100)}%</td>
+        </tr>
+        <tr>
+          <td>500</td>
+          <td>{secondsToMMSS(personalBests[1])}</td>
+          <td>{secondsToMMSS(personalBests[1])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[1].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[1].time)}</td>
+          <td>{Math.floor((benchmarkTimes[1].time/personalBests[1])*100)}%</td>
+        </tr>
+        <tr>
+          <td>1000</td>
+          <td>{secondsToMMSS(personalBests[2]*2)}</td>
+          <td>{secondsToMMSS(personalBests[2])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[2].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[2].time)}</td>
+          <td>{Math.floor((benchmarkTimes[2].time/personalBests[2])*100)}%</td>
+        </tr>
+        <tr>
+          <td>2000</td>
+          <td>{secondsToMMSS(personalBests[3]*4)}</td>
+          <td>{secondsToMMSS(personalBests[3])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[3].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[3].time)}</td>
+          <td>{Math.floor((benchmarkTimes[3].time/personalBests[3])*100)}%</td>
+        </tr>
+        <tr>
+          <td>6000</td>
+          <td>{secondsToMMSS(personalBests[4]*12)}</td>
+          <td>{secondsToMMSS(personalBests[4])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[4].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[4].time)}</td>
+          <td>{Math.floor((benchmarkTimes[4].time/personalBests[4])*100)}%</td>
+        </tr>
+        <tr>
+          <td>10000</td>
+          <td>{secondsToMMSS(personalBests[5]*20)}</td>
+          <td>{secondsToMMSS(personalBests[5])}</td>
+          <td>{secondsToMMSS(benchmarkTimes[5].time/5)}</td>
+          <td>{secondsToMMSS(benchmarkTimes[5].time)}</td>
+          <td>{Math.floor((benchmarkTimes[5].time/personalBests[5])*100)}%</td>
+        </tr>
+      </tbody>
+    </Table>
+    </div>
+        </div>
+        </div>
+      </>
     );
 }
 
@@ -629,76 +741,14 @@ export function Tabss(){
 }
 
 export function Benchmarkk(){
+
+    useEffect(() => {
+    console.log('benchmarkActiveTab', localStorage.getItem('benchmarkActiveTab'));
+    }
+    , [localStorage.getItem('benchmarkActiveTab')]);
+
     return (
-        <Table striped bordered hover>
-      <thead>
-        <tr>
-          <th>Distance</th>
-          <th>Rate</th>
-          <th>Time</th>
-          <th>Split</th>
-          <th>Benchmark Score</th>
-          <th>Benchmark Split</th>
-          <th>%</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>100</td>
-          <td>x</td>
-          <td>00:17</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-        <tr>
-          <td>500</td>
-          <td>x</td>
-          <td>01:38</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-        <tr>
-          <td>1000</td>
-          <td>x</td>
-          <td>03:13</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-        <tr>
-          <td>2000</td>
-          <td>x</td>
-          <td>06:46</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-        <tr>
-          <td>6000</td>
-          <td>x</td>
-          <td>21:13</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-        <tr>
-          <td>10000</td>
-          <td>x</td>
-          <td>37:00</td>
-          <td>@mdo</td>
-          <td>00:34</td>
-            <td>00:34</td>
-            <td>87%</td>
-        </tr>
-      </tbody>
-    </Table>
+    < BenchmarkResultsTable benchmarkActiveTab={localStorage.getItem('benchmarkActiveTab')} />
     );
 }
 

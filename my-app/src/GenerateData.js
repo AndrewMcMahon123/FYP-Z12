@@ -52,16 +52,6 @@ const downloadCSV = async () => {
     };
 
 
-
-//  const downloadResults = () => {
-//    const downloadLink = document.createElement('a');
-//    downloadLink.setAttribute('href', 'http://localhost:4000/download?user_id='+username+'');
-//    downloadLink.setAttribute('download', {username}+'.csv');
-//    document.body.appendChild(downloadLink);
-//    downloadLink.click();
-//    document.body.removeChild(downloadLink);
-//  };
-
     const downloadResults = () => {
     const downloadLink = document.createElement('a');
     downloadLink.setAttribute('href', 'http://localhost:4000/download?user_name='+username+'');
@@ -71,14 +61,6 @@ const downloadCSV = async () => {
     document.body.removeChild(downloadLink);
   };
 
-    const viewResults = () => {
-    const windowObjectReference = window.open('', '_blank', 'resizable,scrollbars,status');
-    const documentRef = windowObjectReference.document;
-    documentRef.write(`<html><head><title>Results</title></head><body><pre>${csvData}</pre></body></html>`);
-    documentRef.close();
-  };
-
-  console.log(downloadedCsvData)
 
     let csvData;
 //  if (isDownloadReady) {
@@ -86,7 +68,6 @@ const downloadCSV = async () => {
 //  }
 
 const disableButton = !resultsGenerated;
-console.log(disableButton);
 
 
 
@@ -102,7 +83,7 @@ return (
             <div class="row justify-content-center">
               <div class="col-md-10 col-lg-6 col-xl-5 order-2 order-lg-1">
 
-                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">Generate Results</p>
+                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">Generate Synthetic Results</p>
 
                   <div class="d-flex flex-row align-items-center mb-4">
                     <i class="fas fa-user fa-lg me-3 fa-fw"></i>

@@ -8,6 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 const LoginComponent = () => {
   localStorage.clear();
+  console.log("LoginComponent");
   const [inputValue, setInputValue] = useState("");
   const [inputValue2, setInputValue2] = useState("");
   const [authenticated, setauthenticated] = useState(
@@ -26,6 +27,10 @@ const LoginComponent = () => {
   const navigate = useNavigate();
   const handleSubmit = async (event) => {
     // check if input values are empty
+    if (inputValue === "" || inputValue2 === "") {
+    toast.error("Please fill in all fields");
+    return;
+    }
     setError(false);
     event.preventDefault();
     const response = await fetch("http://localhost:4000/token", {
@@ -39,13 +44,44 @@ const LoginComponent = () => {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("authenticated", true);
       localStorage.setItem("username", inputValue);
+      localStorage.setItem('benchmarkActiveTab', 0);
+        toast.success("Signing in...");
+        setTimeout(() => {
       navigate("/dashboard");
+        }, 2000);
+      return true;
     } else {
       setError(true);
+      toast.error("Username or password is incorrect");
     }
   };
 
-async function signIn
+//const func = async () => {
+//    const response = await fetch("http://localhost:4000/token", {
+//      method: "POST",
+//      headers: { "Content-Type": "application/json" },
+//      body: JSON.stringify({ username: inputValue, password: inputValue2 }),
+//    });
+//}
+//
+//const signIn = async (event) => {
+//    toast.promise(
+//        func(),
+//        {
+//            loading: 'Signing in...',
+//            success: 'Signed in!',
+//            error: 'Username or password is incorrect',
+//        }
+//    ).then(() => {
+//      navigate("/dashboard");
+//    }
+//    )
+//    .catch(() => {
+//    console.log('error')
+//    });
+//}
+
+
 
 
 
@@ -160,12 +196,9 @@ return (
                     <button type="button" class="btn btn-primary btn-lg" onClick={handleSubmit}
                     >Sign in</button>
                   </div>
-
-                            {error && (
-            <p className="text-danger text-center">
-              Incorrect username or password
-            </p>
-          )}
+                            <p className="forgot-password text-right mt-2">
+            <a href="/register">Register</a>
+          </p>
 
                 </form>
 

@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { Graph, KpiCard, Tabss, Benchmarkk } from "./Dash";
+import { Graph, Tabss, Benchmarkk } from "./Dash";
+import {MetricComponent} from "./MetricComponent";
+import { BenchmarkResultsTable } from "./BenchmarkResultsTable";
 import { NavBarSticky } from "./Navbar";
 import { Data, Data2 } from "./Data";
 import BenchmarkChart from "./BenchmarkChart";
 import toast, { Toaster } from 'react-hot-toast';
+import {PersonalBests} from "./PersonalBests";
+import {SeasonHighs} from "./SeasonHigh";
 
 const Dashboard = () => {
 
@@ -62,7 +66,7 @@ useEffect(() => {
     }
     }
     );
-    }, []);
+    }, [localStorage.getItem("username")]);
 
   useEffect(() => {
     if (token.length > 0 && loggedInUser === "true") {
@@ -162,9 +166,11 @@ useEffect(() => {
 
         <div class="col-sm-5">
           <div class="well">
-            <h4 class="text-center">Metrics</h4>
+            <div class="text-center">
+              <h4>Metrics</h4>
+            </div>
             <div>
-              <KpiCard />
+              <MetricComponent />
             </div>
           </div>
         </div>
@@ -172,66 +178,17 @@ useEffect(() => {
 
       <div class="col-sm-2">
         <div class="well">
-          <h4 class="text-center">Personal Bests</h4>
-          <p>
-            100m: 00:21 <span class="text-success d-inline">(102%)</span>
-          </p>
-          <p>
-            500m: 01:23 <span class="text-danger d-inline">(65%)</span>
-          </p>
-          <p>
-            1000m: 03:23 <span class="text-danger d-inline">(74%)</span>
-          </p>
-          <p>
-            2000m: 05:53 <span class="text-success d-inline">(118%)</span>
-          </p>
-          <p>
-            5000m: 14:25 <span class="text-success d-inline">(98%)</span>
-          </p>
-          <p>
-            10000m: 27:38 <span class="text-danger d-inline">(54%)</span>
-          </p>
+        < PersonalBests />
         </div>
       </div>
 
       <div class=" col-sm-2">
         <div class="well">
-          <h4 class="text-center">Season Highs</h4>
-          <p>
-            100m: 00:21 <span class="text-success d-inline">(102%)</span>
-          </p>
-          <p>
-            500m: 01:23 <span class="text-danger d-inline">(65%)</span>
-          </p>
-          <p>
-            1000m: 03:23 <span class="text-danger d-inline">(74%)</span>
-          </p>
-          <p>
-            2000m: 05:53 <span class="text-success d-inline">(118%)</span>
-          </p>
-          <p>
-            5000m: 14:25 <span class="text-success d-inline">(98%)</span>
-          </p>
-          <p>
-            10000m: 27:38 <span class="text-danger d-inline">(54%)</span>
-          </p>
+        < SeasonHighs />
         </div>
       </div>
 
-      <div class="col-sm-6">
-        <div class="well">
           <Graph />
-        </div>
-      </div>
-      <div class="col-sm-6">
-        <div class="well">
-            <h3 class="text-center">Benchmark results</h3>
-            <div>
-            < Benchmarkk />
-            </div>
-            </div>
-            </div>
-
     </div>
   );
 };
