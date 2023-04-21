@@ -71,7 +71,7 @@ const weightOptions = [
 
     const [setGender, setGenderOption] = useState(null);
 //    const [setGender, setGenderOption] = useState(genderOptions[0].value);
-    const [setAge, setAgeOption] = useState(null);
+    const [setAge, setAgeOption] = useState('U23');
 //    const [setAge, setAgeOption] = useState(ageOptions[0].value);
     const [setWeight, setWeightOption] = useState(null);
 //    const [setWeight, setWeightOption] = useState(weightOptions[0].value);
@@ -179,7 +179,6 @@ const [chartData, setChartData] = useState({
   labels: Data.map((data) => data.distance),
   datasets: [
     {
-//      data: Data.map((data) => convertDurationtoSeconds(data.split)),
       data: Object.values(gr).map((data) => data.time),
       label: 'Benchmark Split',
       backgroundColor: 'rgba(255, 159, 64, 0.2)',
@@ -549,7 +548,10 @@ return (
 <div className="d-flex">
 <GenderDropdown selectedOption={setGender} setGender={setGender} setGenderOption={setGenderOption} />
 <AgeDropdown selectedOption={setAge} setAge={setAge} setAgeOption={setAgeOption} />
-<WeightDropdown selectedOption={setWeight} setWeight={setWeight} setWeightOption={setWeightOption}/>
+
+{setAge.value !== 'U14' && setAge.value !== 'U16' && typeof setAge !== 'undefined' && (
+<WeightDropdown selectedOption={setWeight} setWeight={setWeight} setWeightOption={setWeightOption} />
+)}
 </div>
 </div>
 <Tab>Elite 1</Tab>

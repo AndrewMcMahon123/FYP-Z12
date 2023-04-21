@@ -159,7 +159,6 @@ useEffect(() => {
               <p>Category: J18</p>
               <p>Club: {userInformation.club}</p>
               <p>Coach: Jimmy</p>
-              <p>Next race: 23/02/2023 | Limerick | 100m</p>
             </div>
           </div>
         </div>

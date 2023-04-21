@@ -1,6 +1,9 @@
 import { React } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export function NavBarFixed(){
+    const location = useLocation();
+
     return (
      <div>
       <nav class="navbar navbar-expand-lg navbar-light bg-light navbar-fixed-top">
@@ -12,21 +15,21 @@ export function NavBarFixed(){
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
               <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/home">Home</a>
+                <a class={`nav-link ${location.pathname === '/home' ? 'active' : ''}`} aria-current="page" href="/home">Home</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link active" href="/dashboard">Dashboard</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Search</a>
+                <a class={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} href="/dashboard">Dashboard</a>
               </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/auth">
+                    <a class={`nav-link ${location.pathname === '/auth' ? 'active' : ''}`} href="/auth">
                         {localStorage.getItem('authenticated') && localStorage.getItem('validToken') && localStorage.getItem('username') && localStorage.getItem('token') ? 'Log out' : 'Log in'}
                     </a>
                 </li>
-          </ul>
-            </div>
+                <li class="nav-item">
+                    <a class={`nav-link ${location.pathname === '/about' ? 'active' : ''}`} href="/about">About</a>
+                </li>
+            </ul>
+          </div>
         </div>
       </nav>
     </div>
@@ -34,7 +37,10 @@ export function NavBarFixed(){
 
 }
 
+
 export function NavBarSticky(){
+
+    const location = useLocation();
 
     return (
         <div>
@@ -47,20 +53,20 @@ export function NavBarSticky(){
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
               <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/home">Home</a>
+                <a class={`nav-link ${location.pathname === '/home' ? 'active' : ''}`} aria-current="page" href="/home">Home</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link active" href="/dashboard">Dashboard</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Search</a>
+                <a class={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} href="/dashboard">Dashboard</a>
               </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/auth">
+                    <a class={`nav-link ${location.pathname === '/auth' ? 'active' : ''}`} href="/auth">
                         {localStorage.getItem('authenticated') && localStorage.getItem('validToken') && localStorage.getItem('username') && localStorage.getItem('token') ? 'Log out' : 'Log in'}
                     </a>
                 </li>
-          </ul>
+                <li class="nav-item">
+                    <a class={`nav-link ${location.pathname === '/about' ? 'active' : ''}`} href="/about">About</a>
+                </li>
+            </ul>
             </div>
           </div>
       </nav>
@@ -293,3 +299,4 @@ export function NavBarSticky(){
 //    </Disclosure>
 //  )
 //}
+

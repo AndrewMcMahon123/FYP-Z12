@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PasswordChecklist from "react-password-checklist"
 import toast, { Toaster } from 'react-hot-toast';
 import {NavBarFixed} from "./Navbar";
+import z12logo from './z12logo.jpg';
 
 const RegistrationComponent = () => {
 
@@ -47,7 +48,6 @@ const handleRegister = async (event) => {
         body: JSON.stringify({ username, password, email }),
     });
     const data = await response.json();
-    console.log('WESPONSE', data);
     if (data == 'User created successfully') {
         const response = await fetch("http://localhost:4000/token", {
         method: "POST",
@@ -61,12 +61,8 @@ const handleRegister = async (event) => {
           localStorage.setItem("username", username);
           navigate("/createprofile");
         }
-
-
-
-
-    navigate("/createprofile");
     }
+
     if (data.detail == 'Invalid email format') {
         toast.error('Invalid email format');
     }
@@ -174,8 +170,7 @@ return (
 
               </div>
               <div class="col-md-10 col-lg-6 col-xl-7 d-flex align-items-center order-1 order-lg-2">
-                  <img src="https://scontent.fdub5-2.fna.fbcdn.net/v/t39.30808-6/310578703_500439622100980_5259821817363940372_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=e3f864&_nc_ohc=dVX_C_yPP88AX95A6N_&_nc_ht=scontent.fdub5-2.fna&oh=00_AfC2_D-O9Cl8JDUPa-u1hTx0LQPBgKv0699T6JmkZZ8Lvg&oe=64188363"
-                  class="img-fluid" alt="Sample image"></img>
+                  <img src={z12logo} class="img-fluid" alt="Sample image"></img>
               </div>
             </div>
           </div>

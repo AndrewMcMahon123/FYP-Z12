@@ -2,8 +2,63 @@ import {NavBarFixed} from "./Navbar";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
+import z12logo from './z12logo.jpg';
 
 const CreateProfileComponent = () => {
+
+  const loggedInUser = localStorage.getItem("authenticated");
+  const user_token = localStorage.getItem("token");
+  let initialized = false;
+
+const username = localStorage.getItem("username");
+
+useEffect(() => {
+    const response = fetch("http://localhost:4000/user_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: user_token }),
+    }
+    ).then((response) => response.json())
+    .then((data) => {
+    if(data.sub.username !== username){
+    toast.error("Username does not match the token...\n Redirecting to login page...");
+        setTimeout(() => {
+        window.location.href = "/auth";
+    }, 2000);
+    }
+    }
+    );
+    }, [localStorage.getItem("username")]);
+
+  useEffect(() => {
+    if (user_token.length > 0 && loggedInUser === "true") {
+        async function verifyToken() {
+          const response = await fetch("http://localhost:4000/verify_user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: user_token }),
+          })
+            .then((response) => response.status)
+            .then((status) => {
+              if (status === 200) {
+                console.log("token is valid");
+                localStorage.setItem("validToken", "true");
+              } else {
+                console.log("token is not valid");
+                localStorage.setItem("validToken", "false");
+              }
+            });
+        }
+        verifyToken();
+      }
+  }, []);
+
+  if (user_token === null || localStorage.getItem("validToken") === "false" || loggedInUser === "false") {
+    console.log("token", user_token);
+    console.log("loggedInUser", loggedInUser);
+    window.location.href = "/auth";
+  }
+
 
 const [firstName, setFirstName] = useState("");
 const [lastName, setLastName] = useState("");
@@ -53,6 +108,26 @@ useEffect(() => {
 
 
 const handleSubmit = async (event) => {
+    if(firstName === "" || lastName === "" || club === "" || dateOfBirth === "" || height === 0 || weight === 0){
+        toast.error("Please fill out all fields");
+        return;
+    }
+    if(height < 0 || weight < 0){
+        toast.error("Height and weight must be greater than 0");
+        return;
+    }
+    if(height > 300 || weight > 300){
+        toast.error("Height and weight must be less than 300");
+        return;
+    }
+    if(Date.parse(dateOfBirth) > new Date()){
+        toast.error("Date of birth must be in the past");
+        return;
+    }
+    if(Date.parse(dateOfBirth) < new Date(1918, 1, 1)){
+        toast.error("Date of birth must be after 1918");
+        return;
+    }
     const response = await fetch("http://localhost:4000/create_profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,7 +141,12 @@ const handleSubmit = async (event) => {
                               club : club}),
     });
     const data = await response.json();
-    console.log('WESPONSE', data);
+    console.log(data);
+    if(data === 'User profile created successfully'){
+        toast.success("Profile created!");
+        setSuccess(true);
+        navigate("/generate-data");
+    }
     }
 
 const navigate = useNavigate();
@@ -202,7 +282,7 @@ return (
 
 
                   <div class="d-flex justify-content-center mx-4 mb-3 mb-lg-4">
-                    <button type="button" class="btn btn-primary btn-lg" disabled={disabled} onClick={saveProfile}>Save</button>
+                    <button type="button" class="btn btn-primary btn-lg" disabled={disabled} onClick={handleSubmit}>Save</button>
                   </div>
 
                 </form>
@@ -210,8 +290,7 @@ return (
               </div>
               <div class="col-md-10 col-lg-6 col-xl-7 d-flex align-items-center order-1 order-lg-2">
 
-                <img src="https://scontent.fdub5-2.fna.fbcdn.net/v/t39.30808-6/310578703_500439622100980_5259821817363940372_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=e3f864&_nc_ohc=dVX_C_yPP88AX95A6N_&_nc_ht=scontent.fdub5-2.fna&oh=00_AfC2_D-O9Cl8JDUPa-u1hTx0LQPBgKv0699T6JmkZZ8Lvg&oe=64188363"
-                  class="img-fluid" alt="Sample image"></img>
+                <img src={z12logo} class="img-fluid" alt="Sample image"></img>
 
               </div>
             </div>

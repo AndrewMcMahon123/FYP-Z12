@@ -10,6 +10,7 @@ import Blah from "./Blah"
 import Register from "./Register"
 import CreateProfile from "./CreateProfile"
 import GenerateData from "./GenerateData"
+import About from "./About"
 import '@tremor/react/dist/esm/tremor.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/Blah" element={<Blah />} />
+        <Route path="/About" element={<About />} />
       </Routes>
     </BrowserRouter>
     </div>
