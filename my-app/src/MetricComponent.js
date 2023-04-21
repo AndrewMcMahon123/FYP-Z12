@@ -97,9 +97,7 @@ export function MetricComponent(props) {
             <Flex alignItems="items-start">
                 <Block>
                     <Metric>{distances[count]}m</Metric>
-                    <Text
-                    textAlignment="text-center"
-                    >{secondsToMMSSss(personalBests[count]/5)}</Text>
+                    <Text textAlignment="text-center">{secondsToMMSSss(personalBests[count]/5)}</Text>
                 </Block>
                 <Badge color="green" text={getPercentage(benchmarkTimes[count].time, personalBests[count])}/>
             </Flex>
